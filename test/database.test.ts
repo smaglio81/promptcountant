@@ -297,9 +297,9 @@ describe('PromptAnalyzerDb', () => {
     });
 
     it('updates _loadedMtime on a successful reload', () => {
-      // After create() from a new file, _loadedMtime is 0 because the file
-      // did not exist when create() began; initialize() writes it afterwards.
-      expect((db as unknown as { _loadedMtime: number })._loadedMtime).toBe(0);
+      // Manually zero _loadedMtime to simulate a stale state, then verify
+      // that reload() updates it from the on-disk file stat.
+      (db as unknown as { _loadedMtime: number })._loadedMtime = 0;
       db.reload();
       expect((db as unknown as { _loadedMtime: number })._loadedMtime).toBeGreaterThan(0);
     });

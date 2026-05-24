@@ -140,6 +140,9 @@ export class PromptAnalyzerDb {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(this.dbPath, Buffer.from(data));
+    // Keep _loadedMtime in sync so reloadIfChanged() does not treat our own
+    // writes as external changes requiring a reload.
+    try { this._loadedMtime = fs.statSync(this.dbPath).mtimeMs; } catch { /* ignore */ }
   }
 
   // ─── Internal helpers ────────────────────────────────────────────────────────

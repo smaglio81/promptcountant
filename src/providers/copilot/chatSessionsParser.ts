@@ -143,7 +143,14 @@ export function parseChatSessionFile(
   const chatSessionsPath = path.dirname(filePath);
 
   // Feature: Read debug-logs to extract precise token telemetry
-  const debugLogsDir = path.join(path.dirname(chatSessionsPath), 'GitHub.copilot-chat', 'debug-logs', sessionId);
+  // Navigate defensively: if chatSessionsPath is already nested inside
+  // GitHub.copilot-chat, avoid duplicating that path segment.
+  const hashDir = path.dirname(chatSessionsPath);
+  const copilotChatDir =
+    path.basename(hashDir) === 'GitHub.copilot-chat'
+      ? hashDir
+      : path.join(hashDir, 'GitHub.copilot-chat');
+  const debugLogsDir = path.join(copilotChatDir, 'debug-logs', sessionId);
   const debugLogPath = path.join(debugLogsDir, 'main.jsonl');
   let hasTelemetry = false;
 
