@@ -1,0 +1,137 @@
+{
+  "name": "promptcountant",
+  "displayName": "Promptcountant",
+  "description": "Analyze GitHub Copilot chat session token usage and estimated costs",
+  "version": "0.0.2",
+  "publisher": "smaglio81",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smaglio81/promptcountant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smaglio81/promptcountant/issues"
+  },
+  "homepage": "https://github.com/smaglio81/promptcountant#readme",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "resources/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "promptcountant",
+          "title": "Promptcountant",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "promptcountant": [
+        {
+          "type": "webview",
+          "id": "promptcountant.sessions",
+          "name": "Sessions",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "promptcountant.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)",
+        "category": "Promptcountant"
+      },
+      {
+        "command": "promptcountant.collapseAll",
+        "title": "Collapse All",
+        "icon": "$(collapse-all)",
+        "category": "Promptcountant"
+      },
+      {
+        "command": "promptcountant.openSession",
+        "title": "Open Session Detail",
+        "category": "Promptcountant"
+      },
+      {
+        "command": "promptcountant.recomputeCosts",
+        "title": "Recompute Costs (Fast)",
+        "icon": "$(zap)",
+        "category": "Promptcountant"
+      },
+      {
+        "command": "promptcountant.resetDatabase",
+        "title": "Clear Database & Re-scan All Sessions",
+        "category": "Promptcountant"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "promptcountant.collapseAll",
+          "when": "view == promptcountant.sessions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "promptcountant.refresh",
+          "when": "view == promptcountant.sessions",
+          "group": "navigation@2"
+        },
+        {
+          "command": "promptcountant.recomputeCosts",
+          "when": "view == promptcountant.sessions",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Promptcountant",
+      "properties": {
+        "promptcountant.customPrices": {
+          "type": "object",
+          "description": "Per-model price overrides (USD per 1 million tokens). Keys are model display names; values have 'input' and 'output' fields. E.g. { \"GPT-4o\": { \"input\": 5, \"output\": 15 } }",
+          "default": {}
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "jest",
+    "test:integration": "jest --config jest.integration.config.js",
+    "vscode:prepublish": "npm run compile",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "package": "npm run check-types && npm run compile",
+    "package:vsix": "npx vsce package",
+    "publish:ovsx": "npx ovsx publish",
+    "install:vsix": "npx vsce package && npm run install:vsix:only",
+    "install:vsix:only": "node -e \"const fs=require('fs'); const files=fs.readdirSync('.').filter(f=>f.startsWith('promptcountant-')&&f.endsWith('.vsix')).sort(); if(files.length) require('child_process').execSync('code-insiders --install-extension '+files[files.length-1], {stdio:'inherit'});\"",
+    "uninstall:vsix": "code-insiders --uninstall-extension smaglio81.promptcountant",
+    "reinstall:vsix": "npm run uninstall:vsix && npm run install:vsix"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "sql.js": "^1.12.0"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.9.1",
+    "@types/jest": "^29.5.12",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "@types/sql.js": "^1.4.9",
+    "@types/vscode": "^1.80.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}
