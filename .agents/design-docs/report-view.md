@@ -9,6 +9,12 @@
 - Cost tab model chips support **multi-select** filtering. Users can toggle multiple models simultaneously; selecting `All` clears individual selections.
 - Copilot provider row icon in the sidebar uses a `vscode-icons` MIT-licensed glyph rendered with `currentColor` for theme compatibility.
 - README was updated with a release-context note and a UI screenshot to improve first-run clarity for end users.
+- **Sidebar cost rollups**: `WorkspaceNode` now shows `costLabel` (formatted USD). The root Copilot node shows a grand-total cost derived by summing workspace costs in `postData()`.
+- **Time range slicer in header**: the range selector (7d / 30d / 90d / All) moved from the tab nav bar into the `<header>` row. `rebuildKpis()` is called on every chip change and on init to keep TOTAL, COSTS, and STEPS KPIs in sync with the selected range.
+- **Pie charts in bucket cards**: every list-mode day/week/month card now renders a `MODEL USAGE` pie chart (top 8 models) below the MODEL COST COMPARISON section.
+- **Pie chart at top of chart view**: the model-usage pie block moved to first position in `renderBucketCharts()`, appearing before the token line charts.
+- **"Cost" tab renamed to "Models"**: the button display text changed from `Cost` to `Models`; the internal `data-tab="cost"` attribute and `id="panel-cost"` are unchanged.
+- **Kicker hardcoded to COPILOT**: `providerSuffix` is now the constant `'COPILOT'` rather than being derived from model providers.
 
 ---
 
@@ -47,7 +53,7 @@ The report opens in the **editor area** (`vscode.window.createWebviewPanel`) —
 │  ╚═════════════════════════════════════════════════════════════╝  │
 │                                                                   │
 │  ┌──────────┬──────────┬──────────┐                               │
-│  │ PROJECTS │   TIME   │   COST   │   ← tab strip                 │
+│  │ PROJECTS │   TIME   │  MODELS  │   ← tab strip                 │
 │  └──────────┴──────────┴──────────┘                               │
 │                                                                   │
 │  <active tab content>                                             │
@@ -202,7 +208,7 @@ LLM USAGE (LATEST WEEK)
 
 ---
 
-## 5. Tab 3 — COST
+## 5. Tab 3 — MODELS
 
 ```
 TOTAL TOKENS   INPUT     OUTPUT    REASONING   CACHE READ
@@ -255,7 +261,7 @@ Our model strings (e.g. `claude-3-5-sonnet`, `gpt-4o`) don't all have a `provide
 | Header counters        | across all data      | filtered to workspace  | filtered to session                      |
 | PROJECTS tab           | all workspace cards  | single workspace card  | single session card (no project list)    |
 | TIME tab               | all data bucketed    | filtered + bucketed    | filtered + bucketed; daily view shows only days the session was active |
-| COST tab               | full filter chips    | provider chips from workspace's models only | provider chips from session's models only |
+| MODELS tab             | full filter chips    | provider chips from workspace's models only | provider chips from session's models only |
 
 ---
 

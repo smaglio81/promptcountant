@@ -54,13 +54,24 @@ export class PromptAnalyzerDb {
    */
   reload(): void {
     if (!fs.existsSync(this.dbPath)) return;
+    // Read and parse the file before touching this.db so that a failure
+    // (e.g. EBUSY on Windows during a concurrent write) leaves the
+    // existing in-memory DB intact rather than a closed/broken instance.
+    let fileBuffer: Buffer;
+    let newDb: SqlDb;
+    try {
+      fileBuffer = fs.readFileSync(this.dbPath);
+      newDb = new this.SQL.Database(fileBuffer);
+    } catch {
+      // File may be partially written by the worker — keep existing state.
+      return;
+    }
     try {
       this.db.close();
     } catch {
       // ignore — db may already be closed
     }
-    const fileBuffer = fs.readFileSync(this.dbPath);
-    this.db = new this.SQL.Database(fileBuffer);
+    this.db = newDb;
     // Re-apply the schema. The CREATE TABLE statements use IF NOT EXISTS,
     // so this is a no-op on a healthy DB but recovers gracefully when the
     // file on disk is empty or was written by another process before its

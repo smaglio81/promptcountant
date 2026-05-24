@@ -23,13 +23,8 @@ export function buildSessionDetailHtml(input: SessionDetailHtmlInput): string {
   const sessionId = session?.session_id ?? '';
   const title = escapeHtml(session?.display_name ?? 'Session Detail');
   
-  const isTelemetryDisabled = session?.telemetry_disabled === 1;
-  const totalCost = isTelemetryDisabled 
-    ? '-' 
-    : (session?.total_cost != null ? `$${session.total_cost.toFixed(2)}` : 'N/A');
-  const totalCredits = isTelemetryDisabled
-    ? '-'
-    : (session?.total_cost != null ? String(Math.round(session.total_cost / 0.01)) : 'N/A');
+  const totalCost = session?.total_cost != null ? `$${session.total_cost.toFixed(2)}` : 'N/A';
+  const totalCredits = session?.total_cost != null ? String(Math.round(session.total_cost / 0.01)) : 'N/A';
   const turnCount = turns.length;
 
   const rowsHtml = turns.map(t => renderRow(t)).join('\n');

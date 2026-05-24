@@ -10,6 +10,11 @@
 - End-user docs refreshed (`README.md`) with transition context copy and screenshot-led overview polish.
 - Report UX update documented: Cost tab model filter supports multi-select chips.
 - Copilot provider icon switched to MIT-licensed source asset; third-party attribution captured in `LICENSE`.
+- Sidebar cost rollups added: workspace nodes and the Copilot root node each display an estimated total cost.
+- Time range slicer moved to the report header; all four KPI counters update when the range changes.
+- Pie charts added to every Time-tab bucket card (list mode); pie chart promoted to first position in chart view.
+- Third report tab renamed from "Cost" to "Models" (internal `data-tab` id unchanged).
+- Report kicker hardcoded to `PROMPTCOUNTANT · REPORT (COPILOT)`.
 
 ---
 

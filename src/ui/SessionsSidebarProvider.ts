@@ -11,6 +11,8 @@ interface WorkspacePayload {
   sessionCount: number;
   latestActivity: number | null;
   latestActivityLabel: string;
+  costLabel: string;
+  cost: number;
   sessions: SessionPayload[];
 }
 
@@ -70,6 +72,10 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((msg: IncomingMessage) => {
       switch (msg.type) {
         case 'ready':
+          // Reload from disk before posting — the worker may have completed
+          // while _view was null (sidebar not yet open), so the in-memory DB
+          // could be stale. Matches the behaviour of the 'refresh' button.
+          this.db.reload();
           this.postData();
           break;
         case 'refresh':
@@ -123,7 +129,8 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     const payload: WorkspacePayload[] = workspaces.map(w =>
       this.toWorkspacePayload(w, this.db.getSessions(w.hash))
     );
-    this._view.webview.postMessage({ type: 'data', workspaces: payload });
+    const totalCost = payload.reduce((sum, w) => sum + w.cost, 0);
+    this._view.webview.postMessage({ type: 'data', workspaces: payload, totalCost });
   }
 
   private toWorkspacePayload(w: DbWorkspace, sessions: DbSession[]): WorkspacePayload {
@@ -132,6 +139,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     // sessions yet, we leave it null and the "open chat folder" action is
     // disabled.
     const chatSessionsPath = sessions[0]?.chat_sessions_path ?? null;
+    const workspaceCost = sessions.reduce((sum, s) => sum + (s.total_cost ?? 0), 0);
     return {
       hash: w.hash,
       displayName: w.display_name,
@@ -140,12 +148,14 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
       sessionCount: w.session_count,
       latestActivity: w.latest_activity,
       latestActivityLabel: formatCompactDate(w.latest_activity),
+      costLabel: workspaceCost > 0 ? `$${workspaceCost.toFixed(2)}` : '',
+      cost: workspaceCost,
       sessions: sessions.map(s => ({
         sessionId: s.session_id,
         displayName: s.display_name,
         chatSessionsPath: s.chat_sessions_path,
         totalTurns: s.total_turns,
-        costLabel: s.telemetry_disabled === 1 ? '-' : (s.total_cost != null ? `$${s.total_cost.toFixed(2)}` : ''),
+        costLabel: s.total_cost != null ? `$${s.total_cost.toFixed(2)}` : '',
         updatedAt: s.updated_at
       }))
     };
@@ -308,6 +318,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     const vscode = acquireVsCodeApi();
     const state = {
       data: [], // [{hash, displayName, ..., sessions:[]}]
+      totalCost: 0,
       expanded: new Set(), // workspace hashes the user has explicitly opened
       providerExpanded: true, // Copilot root: starts expanded
       filter: '',
@@ -374,6 +385,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
           '<span class="twisty">' + providerTwisty + '</span>' +
           '<span class="icon copilot">' + copilotSvg + '</span>' +
           '<span class="label">Copilot</span>' +
+          (state.totalCost > 0 ? '<span class="cost">' + escapeHtml('$' + state.totalCost.toFixed(2)) + '</span>' : '') +
         '</div>'
       );
 
@@ -402,6 +414,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
               '<span class="icon">' + folderIcon + '</span>' +
               '<span class="label">' + escapeHtml(ws.displayName) + '</span>' +
               '<span class="desc">' + escapeHtml(desc) + '</span>' +
+              (ws.costLabel ? '<span class="cost">' + escapeHtml(ws.costLabel) + '</span>' : '') +
             '</div>'
           );
 
@@ -587,6 +600,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
       const msg = evt.data;
       if (msg.type === 'data') {
         state.data = msg.workspaces || [];
+        state.totalCost = msg.totalCost || 0;
         render();
       } else if (msg.type === 'status') {
         state.status = msg.message || '';

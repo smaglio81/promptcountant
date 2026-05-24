@@ -6,13 +6,22 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [0.0.2]
 
-Patch release focused on documentation and presentation polish.
+Release focused on UX polish, richer sidebar cost visibility, and report improvements.
+
+### Added
+
+- **Sidebar cost rollups** — each workspace node now shows its total estimated cost. The root Copilot node shows the grand total across all workspaces.
+- **Pie charts in Time bucket cards** — every daily, weekly, and monthly card now includes a model-usage pie chart so you can see model share at a glance without switching to the chart view.
 
 ### Changed
 
 - README now includes a top-level context note about the Premium Requests to AI Credits transition and a screenshot of the extension UI.
 - Sidebar provider icon updated to use a Copilot glyph sourced from `vscode-icons` (MIT licensed), with attribution added in `LICENSE`.
 - Cost report model filter now supports multi-select chips (`All` + multiple model picks) for easier focused comparisons.
+- **Report time range slicer moved to the header** — the range selector (7 days / 30 days / 90 days / All) now sits in the report header alongside the KPI counters. Changing the range updates all four KPI values (TOTAL, COSTS, STEPS) immediately, not just the tab content.
+- **"Cost" tab renamed to "Models"** — the third report tab is now labelled "Models" to better reflect that it lists per-model cost comparisons, not just a raw cost summary.
+- **Report kicker updated** — the header kicker now reads `PROMPTCOUNTANT · REPORT (COPILOT)` to identify the data source.
+- **Pie chart promoted in chart view** — the model-usage pie chart is now the first chart visible in the Time chart view, no longer requiring scrolling past multiple line charts.
 
 ## [0.0.1]
 

@@ -92,6 +92,7 @@ function colorForModel(model: string): string {
 export function buildReportHtml(input: ReportHtmlInput): string {
   const nonce = input.nonce ?? generateNonce();
   const vm = input.vm;
+  const providerSuffix = 'COPILOT';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -107,15 +108,19 @@ export function buildReportHtml(input: ReportHtmlInput): string {
   <header class="report-header">
     <div class="header-row">
       <div class="header-title">
-        <div class="kicker">PROMPTCOUNTANT · REPORT</div>
+        <div class="kicker">PROMPTCOUNTANT · REPORT${providerSuffix ? ` (${providerSuffix})` : ''}</div>
         <h1>${escapeHtml(vm.scopeTitle)}</h1>
+      </div>
+      <div class="range-bar global">
+        <span class="range-label">Range</span>
+        ${renderRangeChips('global')}
       </div>
     </div>
     <div class="kpi-grid">
       ${renderKpi('TODAY', formatTokens(vm.totals.todayTokens), 'tokens', 'cyan')}
-      ${renderKpi('TOTAL', formatTokens(vm.totals.totalTokens), 'tokens', 'blue')}
-      ${renderKpi('COSTS', formatUsd(vm.totals.cost), `${formatInt(Math.round(vm.totals.cost / 0.01))} AI credits`, 'green')}
-      ${renderKpi('STEPS', formatInt(vm.totals.steps), `${vm.totals.sessions} sessions`, 'purple')}
+      ${renderKpi('TOTAL', formatTokens(vm.totals.totalTokens), 'tokens', 'blue', 'total')}
+      ${renderKpi('COSTS', formatUsd(vm.totals.cost), `${formatInt(Math.round(vm.totals.cost / 0.01))} AI credits`, 'green', 'costs')}
+      ${renderKpi('STEPS', formatInt(vm.totals.steps), `${vm.totals.sessions} sessions`, 'purple', 'steps')}
     </div>
   </header>
 
@@ -123,11 +128,7 @@ export function buildReportHtml(input: ReportHtmlInput): string {
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="projects">Projects</button>
       <button class="tab active" role="tab" data-tab="time">Time</button>
-      <button class="tab" role="tab" data-tab="cost">Cost</button>
-    </div>
-    <div class="range-bar global">
-      <span class="range-label">Range</span>
-      ${renderRangeChips('global')}
+      <button class="tab" role="tab" data-tab="cost">Models</button>
     </div>
   </nav>
 
@@ -161,12 +162,14 @@ export function buildReportHtml(input: ReportHtmlInput): string {
 
 // ─── Header / KPI ─────────────────────────────────────────────────────────────
 
-function renderKpi(label: string, value: string, sub: string, accent?: 'blue' | 'orange' | 'green' | 'purple' | 'red' | 'yellow' | 'cyan' | 'pink'): string {
+function renderKpi(label: string, value: string, sub: string, accent?: 'blue' | 'orange' | 'green' | 'purple' | 'red' | 'yellow' | 'cyan' | 'pink', kpiId?: string): string {
   const accentClass = accent ? ` kpi--${accent}` : '';
+  const valueId = kpiId ? ` id="kpi-${kpiId}-value"` : '';
+  const subId = kpiId ? ` id="kpi-${kpiId}-sub"` : '';
   return `<div class="kpi${accentClass}">
-    <div class="kpi-value">${escapeHtml(value)}</div>
+    <div class="kpi-value"${valueId}>${escapeHtml(value)}</div>
     <div class="kpi-label">${escapeHtml(label)}</div>
-    ${sub ? `<div class="kpi-sub">${escapeHtml(sub)}</div>` : ''}
+    ${sub ? `<div class="kpi-sub"${subId}>${escapeHtml(sub)}</div>` : ''}
   </div>`;
 }
 
@@ -323,6 +326,10 @@ function renderBucketCard(b: TimeBucket): string {
         ${b.modelCost.slice(0, 6).map(m => `<li><span class="swatch" style="background:${colorForModel(m.model)}"></span><span class="model">${escapeHtml(m.model)}</span><span class="cost">${escapeHtml(formatUsd(m.cost))}</span></li>`).join('')}
       </ul>
     </div>` : ''}
+    ${b.modelShare.length > 0 ? `<div class="card-section">
+      <div class="card-section-title">MODEL USAGE</div>
+      ${renderPieChart(b.modelShare.slice(0, 8))}
+    </div>` : ''}
   </article>`;
 }
 
@@ -356,6 +363,10 @@ function renderBucketCharts(vm: ReportViewModel): string {
           ${renderMini(`PEAK (${escapeHtml(peak.label)})`, formatTokens(peak.totalTokens))}
         </div>
         <div class="chart-block">
+          <div class="chart-title">LLM USAGE (LATEST ${g.toUpperCase()})</div>
+          ${renderPieChart(latest.modelShare.slice(0, 8))}
+        </div>
+        <div class="chart-block">
           <div class="chart-title">TOTAL TOKENS</div>
           ${renderLineChart([{ name: 'TOTAL', values: tokensSeries, color: 'var(--vscode-charts-blue, #3794ff)' }], labels)}
         </div>
@@ -368,10 +379,6 @@ function renderBucketCharts(vm: ReportViewModel): string {
           <div class="chart-title">SESSIONS AND STEPS</div>
           ${renderLegend(sessionsSteps)}
           ${renderLineChart(sessionsSteps, labels)}
-        </div>
-        <div class="chart-block">
-          <div class="chart-title">LLM USAGE (LATEST ${g.toUpperCase()})</div>
-          ${renderPieChart(latest.modelShare.slice(0, 8))}
         </div>
       </div>`;
     })
@@ -672,7 +679,6 @@ const CSS = `
   }
   .range-bar.global {
     display: flex; align-items: center; gap: 8px;
-    padding-bottom: 4px;
   }
   .tab {
     background: transparent;
@@ -1002,6 +1008,7 @@ const SCRIPT = `
     updateAllSparklines();
     applyRangeToBuckets();
     rebuildCostList();
+    rebuildKpis();
   });
 
   // Cost-tab chips
@@ -1077,6 +1084,14 @@ const SCRIPT = `
       '</svg>';
   }
 
+  function formatTokens(n) {
+    if (!isFinite(n) || n <= 0) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(Math.round(n));
+  }
+  function formatInt(n) { return Math.round(n).toLocaleString(); }
   function formatUsd(n) {
     if (!isFinite(n)) return '$0.00';
     if (Math.abs(n) >= 1000) return '$' + Math.round(n).toLocaleString();
@@ -1085,7 +1100,30 @@ const SCRIPT = `
   function escapeAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
   function escapeText(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+  function rebuildKpis() {
+    const cutoff = rangeCutoff();
+    let totalTokens = 0, cost = 0, steps = 0, sessions = 0;
+    for (const b of (data.dailyBuckets || [])) {
+      if (b.startMs < cutoff) continue;
+      totalTokens += b.totalTokens || 0;
+      cost += b.cost || 0;
+      steps += b.steps || 0;
+      sessions += b.sessions || 0;
+    }
+    const totalVal = document.getElementById('kpi-total-value');
+    if (totalVal) totalVal.textContent = formatTokens(totalTokens);
+    const costsVal = document.getElementById('kpi-costs-value');
+    if (costsVal) costsVal.textContent = formatUsd(cost);
+    const costsSub = document.getElementById('kpi-costs-sub');
+    if (costsSub) costsSub.textContent = formatInt(Math.round(cost / 0.01)) + ' AI credits';
+    const stepsVal = document.getElementById('kpi-steps-value');
+    if (stepsVal) stepsVal.textContent = formatInt(steps);
+    const stepsSub = document.getElementById('kpi-steps-sub');
+    if (stepsSub) stepsSub.textContent = sessions + ' sessions';
+  }
+
   // Initial state
   applyRangeToBuckets();
+  rebuildKpis();
 })();
 `;

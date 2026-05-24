@@ -13,9 +13,10 @@ Promptcountant reads GitHub Copilot's on-disk chat history, adds up the tokens y
 Promptcountant adds a sidebar to the Activity Bar with three things:
 
 - **Search box** — type to filter the session list in real time.
-- **Session tree** — every Copilot chat session you have ever had, grouped by workspace, sorted most-recent-first.
+- **Session tree** — every Copilot chat session you have ever had, grouped by workspace, sorted most-recent-first. Each workspace shows its total estimated cost, and the root Copilot node shows your grand total across all workspaces.
 - **Reports** — open a summary scoped to a single session, a single workspace, or everything across your machine. Each report breaks down total tokens and estimated cost per model.
-- **Model filtering in Cost view** — use multi-select model chips in the Cost tab to compare one model, several models, or all models at once.
+- **Time range filter** — a range selector in the report header (7 days · 30 days · 90 days · All) instantly updates all KPI totals and tab content.
+- **Model filtering in Models tab** — use multi-select model chips in the Models tab to compare one model, several models, or all models at once.
 
 Double-click any session to open a detail panel showing each turn: the model used, the duration, tokens sent, tokens received, and the estimated cost for that turn.
 
@@ -32,7 +33,7 @@ That's it. There is nothing to configure to get started.
 
 **Per-session cost breakdown** — every turn shows the model used, duration, input/output token counts, and the estimated dollar cost using current Copilot pricing.
 
-**Reports at any scope** — see totals for a single session, an entire workspace, or all your activity together. Each report groups results by model so you can tell which models are driving spend.
+**Reports at any scope** — see totals for a single session, an entire workspace, or all your activity together. Each report groups results by model so you can tell which models are driving spend. Use the time range selector in the report header to narrow totals to the last 7, 30, or 90 days.
 
 **Accurate token counts when telemetry is enabled** — if you turn on Copilot's debug logging (`github.copilot.chat.agentDebugLog.fileLogging.enabled` in VS Code settings), Promptcountant uses the exact token counts reported by the LLM, including cache-hit totals. Sessions without telemetry still work — they fall back to a character-based estimate.
 

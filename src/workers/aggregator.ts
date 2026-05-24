@@ -28,6 +28,7 @@ export async function runAggregation(
   isPaused: () => boolean = () => false
 ): Promise<void> {
   const db = await PromptAnalyzerDb.create(dbPath);
+  let finalProgress: AggregationProgress | null = null;
 
   try {
     // ── 1. Refresh pricing cache ──────────────────────────────────────────────
@@ -128,9 +129,16 @@ export async function runAggregation(
       }
     }
 
-    sendMessage({ type: 'complete', payload: { ...progress } });
+    finalProgress = { ...progress };
   } finally {
+    // Close (and flush) the DB before sending 'complete' so that when the
+    // main thread receives 'complete' and calls db.reload(), the file is
+    // guaranteed to be fully written.
     db.close();
+  }
+
+  if (finalProgress) {
+    sendMessage({ type: 'complete', payload: finalProgress });
   }
 }
 
