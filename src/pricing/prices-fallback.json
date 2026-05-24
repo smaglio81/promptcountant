@@ -1,0 +1,121 @@
+﻿[
+    {
+        "model":  "claude-sonnet-4.5",
+        "inputPerM":  3.00,
+        "cachedInputPerM":  0.30,
+        "outputPerM":  15.00,
+        "cacheWritePerM":  3.75
+    },
+    {
+        "model":  "claude-sonnet-4.6",
+        "inputPerM":  3.00,
+        "cachedInputPerM":  0.30,
+        "outputPerM":  15.00,
+        "cacheWritePerM":  3.75
+    },
+    {
+        "model":  "claude-opus-4",
+        "inputPerM":  15.00,
+        "cachedInputPerM":  1.50,
+        "outputPerM":  75.00,
+        "cacheWritePerM":  18.75
+    },
+    {
+        "model":  "claude-haiku-3.5",
+        "inputPerM":  0.80,
+        "cachedInputPerM":  0.08,
+        "outputPerM":  4.00,
+        "cacheWritePerM":  1.00
+    },
+    {
+        "model":  "gpt-4.1",
+        "inputPerM":  2.00,
+        "cachedInputPerM":  0.50,
+        "outputPerM":  8.00,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gpt-4.1-mini",
+        "inputPerM":  0.40,
+        "cachedInputPerM":  0.10,
+        "outputPerM":  1.60,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gpt-4.1-nano",
+        "inputPerM":  0.10,
+        "cachedInputPerM":  0.025,
+        "outputPerM":  0.40,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gpt-4o",
+        "inputPerM":  5.00,
+        "cachedInputPerM":  2.50,
+        "outputPerM":  15.00,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gpt-4o-mini",
+        "inputPerM":  0.15,
+        "cachedInputPerM":  0.075,
+        "outputPerM":  0.60,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "o1",
+        "inputPerM":  15.00,
+        "cachedInputPerM":  7.50,
+        "outputPerM":  60.00,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "o1-mini",
+        "inputPerM":  3.00,
+        "cachedInputPerM":  1.50,
+        "outputPerM":  12.00,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "o3",
+        "inputPerM":  10.00,
+        "cachedInputPerM":  2.50,
+        "outputPerM":  40.00,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "o3-mini",
+        "inputPerM":  1.10,
+        "cachedInputPerM":  0.55,
+        "outputPerM":  4.40,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "o4-mini",
+        "inputPerM":  1.10,
+        "cachedInputPerM":  0.275,
+        "outputPerM":  4.40,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gemini-2.0-flash",
+        "inputPerM":  0.10,
+        "cachedInputPerM":  0.025,
+        "outputPerM":  0.40,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gemini-1.5-pro",
+        "inputPerM":  3.50,
+        "cachedInputPerM":  0.875,
+        "outputPerM":  10.50,
+        "cacheWritePerM":  null
+    },
+    {
+        "model":  "gemini-1.5-flash",
+        "inputPerM":  0.075,
+        "cachedInputPerM":  0.01875,
+        "outputPerM":  0.30,
+        "cacheWritePerM":  null
+    }
+]

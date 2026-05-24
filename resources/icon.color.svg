@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background tile -->
+  <rect x="0" y="0" width="128" height="128" rx="22" fill="url(#bg)"/>
+
+  <!-- Calculator body (scaled from 16x16 original: x=4,y=1,w=11,h=14 -> *8) -->
+  <g filter="url(#shadow)">
+    <rect x="32" y="8" width="88" height="112" rx="12"
+          fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+
+    <!-- Screen -->
+    <rect x="44" y="20" width="64" height="22" rx="3" fill="url(#screen)"/>
+    <!-- Screen text: a small "$" + digits feel -->
+    <text x="102" y="37" text-anchor="end"
+          font-family="Consolas, 'Courier New', monospace"
+          font-size="14" font-weight="700" fill="#34D399">$0.42</text>
+
+    <!-- Keypad dots (3x3, centers from 16x16: 6.5/9.5/12.5 x 7.25/9.5/11.75 -> *8) -->
+    <g fill="#475569">
+      <circle cx="52"  cy="58"  r="4.4"/>
+      <circle cx="76"  cy="58"  r="4.4"/>
+      <circle cx="100" cy="58"  r="4.4"/>
+
+      <circle cx="52"  cy="76"  r="4.4"/>
+      <circle cx="76"  cy="76"  r="4.4"/>
+      <circle cx="100" cy="76"  r="4.4"/>
+
+      <circle cx="52"  cy="94"  r="4.4"/>
+      <circle cx="76"  cy="94"  r="4.4"/>
+      <circle cx="100" cy="94"  r="4.4"/>
+    </g>
+  </g>
+
+  <!-- Chat bubble in bottom-left, overlapping the calculator -->
+  <g filter="url(#shadow)">
+    <path d="M8 68
+             a12 12 0 0 1 12 -12
+             h24
+             a12 12 0 0 1 12 12
+             v12
+             a12 12 0 0 1 -12 12
+             h-11.2
+             l-18.4 17.6
+             v-17.6
+             a12 12 0 0 1 -10.4 -12
+             z"
+          fill="url(#bubble)" stroke="#0F766E" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Three "typing" dots inside the bubble -->
+    <g fill="#0F172A">
+      <circle cx="22" cy="74" r="3"/>
+      <circle cx="32" cy="74" r="3"/>
+      <circle cx="42" cy="74" r="3"/>
+    </g>
+  </g>
+</svg>
