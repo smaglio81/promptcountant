@@ -134,11 +134,16 @@ export async function runAggregation(
     // Close (and flush) the DB before sending 'complete' so that when the
     // main thread receives 'complete' and calls db.reload(), the file is
     // guaranteed to be fully written.
-    db.close();
-  }
-
-  if (finalProgress) {
-    sendMessage({ type: 'complete', payload: finalProgress });
+    try {
+      db.close();
+    } catch {
+      // Ignore close/flush errors — the session data was already written
+      // incrementally; losing the final flush is acceptable, and we must
+      // still send 'complete' so the main thread is never left waiting.
+    }
+    if (finalProgress) {
+      sendMessage({ type: 'complete', payload: finalProgress });
+    }
   }
 }
 

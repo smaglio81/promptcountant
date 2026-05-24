@@ -54,8 +54,8 @@ export class PromptAnalyzerDb {
    * writes to the file, this instance does not automatically see the changes.
    * Call this before reading after an external write may have occurred.
    */
-  reload(): void {
-    if (!fs.existsSync(this.dbPath)) return;
+  reload(): boolean {
+    if (!fs.existsSync(this.dbPath)) return false;
     // Read and parse the file before touching this.db so that a failure
     // (e.g. EBUSY on Windows during a concurrent write) leaves the
     // existing in-memory DB intact rather than a closed/broken instance.
@@ -66,7 +66,7 @@ export class PromptAnalyzerDb {
       newDb = new this.SQL.Database(fileBuffer);
     } catch {
       // File may be partially written by the worker — keep existing state.
-      return;
+      return false;
     }
     try {
       this.db.close();
@@ -80,6 +80,7 @@ export class PromptAnalyzerDb {
     // own schema was applied.
     this.db.exec(SCHEMA_SQL);
     this.migrate();
+    return true;
   }
 
   /**
@@ -93,8 +94,9 @@ export class PromptAnalyzerDb {
     try {
       const mtime = fs.statSync(this.dbPath).mtimeMs;
       if (mtime <= this._loadedMtime) return;
-      this.reload();
-      this._loadedMtime = mtime;
+      if (this.reload()) {
+        this._loadedMtime = mtime;
+      }
     } catch {
       // Stat may fail transiently (e.g. EBUSY during a write); keep existing state.
     }

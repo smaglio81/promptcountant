@@ -1118,8 +1118,9 @@ const SCRIPT = `
     if (costsSub) costsSub.textContent = formatInt(Math.round(cost / 0.01)) + ' AI credits';
     const stepsVal = document.getElementById('kpi-steps-value');
     if (stepsVal) stepsVal.textContent = formatInt(steps);
-    const stepsSub = document.getElementById('kpi-steps-sub');
-    if (stepsSub) stepsSub.textContent = sessions + ' sessions';
+    // kpi-steps-sub (session count) is intentionally kept static: summing
+    // per-day session counts would double-count sessions active on multiple
+    // days. The server-rendered total is always the accurate distinct count.
   }
 
   // Initial state
