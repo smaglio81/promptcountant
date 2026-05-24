@@ -258,4 +258,86 @@ describe('PromptAnalyzerDb', () => {
       expect(record!.last_modified).toBe(1700000099000);
     });
   });
+
+  // ── reload / reloadIfChanged ────────────────────────────────────────────────
+
+  describe('reload', () => {
+    it('returns false when the db file does not exist', async () => {
+      const missingPath = path.join(tmpDir, 'nonexistent.db');
+      const freshDb = await PromptAnalyzerDb.create(missingPath);
+      fs.unlinkSync(missingPath);
+      expect(freshDb.reload()).toBe(false);
+      freshDb.close();
+    });
+
+    it('returns false and preserves in-memory state when file is corrupt', () => {
+      const workspace: WorkspaceInfo = {
+        hash: 'reload-ws',
+        displayName: 'reload-test',
+        workspacePath: null
+      };
+      db.upsertWorkspace(workspace);
+      // Overwrite the on-disk file with garbage so the parse fails.
+      fs.writeFileSync(dbPath, Buffer.from('this is not a valid sqlite database'));
+      expect(db.reload()).toBe(false);
+      // In-memory state must still be intact.
+      expect(db.getWorkspaces()).toHaveLength(1);
+      expect(db.getWorkspaces()[0].hash).toBe('reload-ws');
+    });
+
+    it('returns true and reflects new data after a successful reload', async () => {
+      // Write a second db to the same path with an extra workspace.
+      const db2 = await PromptAnalyzerDb.create(dbPath);
+      db2.upsertWorkspace({ hash: 'from-other', displayName: 'other', workspacePath: null });
+      db2.save();
+      db2.close();
+
+      expect(db.reload()).toBe(true);
+      expect(db.getWorkspaces().some(w => w.hash === 'from-other')).toBe(true);
+    });
+
+    it('updates _loadedMtime on a successful reload', () => {
+      // After create() from a new file, _loadedMtime is 0 because the file
+      // did not exist when create() began; initialize() writes it afterwards.
+      expect((db as unknown as { _loadedMtime: number })._loadedMtime).toBe(0);
+      db.reload();
+      expect((db as unknown as { _loadedMtime: number })._loadedMtime).toBeGreaterThan(0);
+    });
+
+    it('does NOT update _loadedMtime when reload fails', () => {
+      fs.writeFileSync(dbPath, Buffer.from('garbage'));
+      const mtimeBefore = (db as unknown as { _loadedMtime: number })._loadedMtime;
+      db.reload();
+      expect((db as unknown as { _loadedMtime: number })._loadedMtime).toBe(mtimeBefore);
+    });
+  });
+
+  describe('reloadIfChanged', () => {
+    it('skips reload when mtime is unchanged', () => {
+      db.save();
+      const currentMtime = fs.statSync(dbPath).mtimeMs;
+      // Manually set _loadedMtime so the guard thinks the file was already loaded.
+      (db as unknown as { _loadedMtime: number })._loadedMtime = currentMtime;
+
+      const reloadSpy = jest.spyOn(db, 'reload');
+      db.reloadIfChanged();
+      expect(reloadSpy).not.toHaveBeenCalled();
+      reloadSpy.mockRestore();
+    });
+
+    it('calls reload when the file mtime has advanced', () => {
+      db.save();
+      const currentMtime = fs.statSync(dbPath).mtimeMs;
+      (db as unknown as { _loadedMtime: number })._loadedMtime = currentMtime;
+
+      // Advance the on-disk mtime without changing the content.
+      const futureMtime = currentMtime + 2000;
+      fs.utimesSync(dbPath, new Date(futureMtime), new Date(futureMtime));
+
+      const reloadSpy = jest.spyOn(db, 'reload');
+      db.reloadIfChanged();
+      expect(reloadSpy).toHaveBeenCalled();
+      reloadSpy.mockRestore();
+    });
+  });
 });

@@ -64,9 +64,16 @@ export class PromptAnalyzerDb {
     // existing in-memory DB intact rather than a closed/broken instance.
     let fileBuffer: Buffer;
     let newDb: SqlDb;
+    let mtime = 0;
     try {
+      mtime = fs.statSync(this.dbPath).mtimeMs;
       fileBuffer = fs.readFileSync(this.dbPath);
       newDb = new this.SQL.Database(fileBuffer);
+      // sql.js accepts any byte buffer on construction but throws on SQL ops.
+      // Probe the new DB with the schema statements before swapping so that
+      // a corrupt file is detected while this.db is still intact.
+      // CREATE TABLE IF NOT EXISTS is a no-op on a healthy DB.
+      newDb.exec(SCHEMA_SQL);
     } catch {
       // File may be partially written by the worker — keep existing state.
       return false;
@@ -77,12 +84,8 @@ export class PromptAnalyzerDb {
       // ignore — db may already be closed
     }
     this.db = newDb;
-    // Re-apply the schema. The CREATE TABLE statements use IF NOT EXISTS,
-    // so this is a no-op on a healthy DB but recovers gracefully when the
-    // file on disk is empty or was written by another process before its
-    // own schema was applied.
-    this.db.exec(SCHEMA_SQL);
     this.migrate();
+    this._loadedMtime = mtime;
     return true;
   }
 
@@ -97,9 +100,8 @@ export class PromptAnalyzerDb {
     try {
       const mtime = fs.statSync(this.dbPath).mtimeMs;
       if (mtime <= this._loadedMtime) return;
-      if (this.reload()) {
-        this._loadedMtime = mtime;
-      }
+      // reload() updates _loadedMtime internally on success.
+      this.reload();
     } catch {
       // Stat may fail transiently (e.g. EBUSY during a write); keep existing state.
     }

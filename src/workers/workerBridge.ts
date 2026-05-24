@@ -47,18 +47,26 @@ export class WorkerBridge {
           this.onError(
             (msg.payload as { message?: string })?.message ?? 'Unknown worker error'
           );
-          this.worker = null;
+          // Null the reference first so the exit handler below does not
+          // double-fire onError when terminate() causes the worker to exit.
+          {
+            const w = this.worker;
+            this.worker = null;
+            w?.terminate();
+          }
           break;
       }
     });
 
     this.worker.on('error', err => {
       this.onError(err.message);
+      const w = this.worker;
       this.worker = null;
+      w?.terminate();
     });
 
     this.worker.on('exit', code => {
-      if (code !== 0) {
+      if (code !== 0 && this.worker !== null) {
         this.onError(`Worker exited with code ${code}`);
       }
       this.worker = null;
