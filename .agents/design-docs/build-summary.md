@@ -3,6 +3,14 @@
 **Date built:** 2026-05-23  
 **Status:** ✅ All phases complete. All quality gates passed.
 
+## Post-Build Release Notes (v0.0.2)
+
+- SemVer classification: **patch**.
+- `package.json` version updated to `0.0.2`.
+- End-user docs refreshed (`README.md`) with transition context copy and screenshot-led overview polish.
+- Report UX update documented: Cost tab model filter supports multi-select chips.
+- Copilot provider icon switched to MIT-licensed source asset; third-party attribution captured in `LICENSE`.
+
 ---
 
 ## What Was Built

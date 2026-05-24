@@ -1,8 +1,14 @@
 # Report View — Design Specification
 
-> Status: Draft for user review (pre-implementation)
+> Status: Implemented (updated 2026-05-23)
 > Inspired by: [sweetim/token-lens](https://github.com/sweetim/token-lens) — landing.jpg
 > Target surface: VS Code **editor area** (webview panel, same pattern as `SessionDetailPanel`)
+
+## Recent Implemented Updates (v0.0.2)
+
+- Cost tab model chips support **multi-select** filtering. Users can toggle multiple models simultaneously; selecting `All` clears individual selections.
+- Copilot provider row icon in the sidebar uses a `vscode-icons` MIT-licensed glyph rendered with `currentColor` for theme compatibility.
+- README was updated with a release-context note and a UI screenshot to improve first-run clarity for end users.
 
 ---
 

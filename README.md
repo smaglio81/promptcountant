@@ -1,6 +1,6 @@
 # Promptcountant
 
-> **Note —** This extensions was built to understand what the cost conversion might be like when GitHub Copilot switches away from Premium Requests. It probably won't be on much use after June 1, 2026.
+> **Note —** This extension was built to understand what costs might look like as GitHub Copilot moves from Premium Requests to AI Credits. It may have less day-to-day value after the June 2026 transition is complete.
 
 See how much your GitHub Copilot chat conversations are costing you — directly inside **VS Code**.
 
@@ -15,6 +15,7 @@ Promptcountant adds a sidebar to the Activity Bar with three things:
 - **Search box** — type to filter the session list in real time.
 - **Session tree** — every Copilot chat session you have ever had, grouped by workspace, sorted most-recent-first.
 - **Reports** — open a summary scoped to a single session, a single workspace, or everything across your machine. Each report breaks down total tokens and estimated cost per model.
+- **Model filtering in Cost view** — use multi-select model chips in the Cost tab to compare one model, several models, or all models at once.
 
 Double-click any session to open a detail panel showing each turn: the model used, the duration, tokens sent, tokens received, and the estimated cost for that turn.
 

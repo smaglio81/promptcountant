@@ -4,6 +4,16 @@ All notable changes to the "Promptcountant" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.2]
+
+Patch release focused on documentation and presentation polish.
+
+### Changed
+
+- README now includes a top-level context note about the Premium Requests to AI Credits transition and a screenshot of the extension UI.
+- Sidebar provider icon updated to use a Copilot glyph sourced from `vscode-icons` (MIT licensed), with attribution added in `LICENSE`.
+- Cost report model filter now supports multi-select chips (`All` + multiple model picks) for easier focused comparisons.
+
 ## [0.0.1]
 
 Initial release.

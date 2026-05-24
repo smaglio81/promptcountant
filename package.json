@@ -2,7 +2,7 @@
   "name": "promptcountant",
   "displayName": "Promptcountant",
   "description": "Analyze GitHub Copilot chat session token usage and estimated costs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "smaglio81",
   "repository": {
     "type": "git",
