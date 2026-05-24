@@ -19,6 +19,8 @@ type SqlDb = any;
 type SqlValue = number | string | Uint8Array | null;
 
 export class PromptAnalyzerDb {
+  private _loadedMtime = 0;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private constructor(
     private db: SqlDb,
@@ -78,6 +80,24 @@ export class PromptAnalyzerDb {
     // own schema was applied.
     this.db.exec(SCHEMA_SQL);
     this.migrate();
+  }
+
+  /**
+   * Reloads only when the on-disk file is newer than the last load.
+   * Use this instead of `reload()` for passive/background callers (e.g. the
+   * sidebar `ready` handler) to avoid unnecessary I/O on the extension-host
+   * event loop when nothing has changed.
+   */
+  reloadIfChanged(): void {
+    if (!fs.existsSync(this.dbPath)) return;
+    try {
+      const mtime = fs.statSync(this.dbPath).mtimeMs;
+      if (mtime <= this._loadedMtime) return;
+      this.reload();
+      this._loadedMtime = mtime;
+    } catch {
+      // Stat may fail transiently (e.g. EBUSY during a write); keep existing state.
+    }
   }
 
   private initialize(): void {

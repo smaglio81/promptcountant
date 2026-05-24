@@ -112,9 +112,9 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
     "package": "npm run check-types && npm run compile",
-    "package:vsix": "node --no-deprecation node_modules/@vscode/vsce/vsce package",
+    "package:vsix": "npx vsce package",
     "publish:ovsx": "npx ovsx publish",
-    "install:vsix": "node --no-deprecation node_modules/@vscode/vsce/vsce package && npm run install:vsix:only",
+    "install:vsix": "npx vsce package && npm run install:vsix:only",
     "install:vsix:only": "node -e \"const fs=require('fs'); const files=fs.readdirSync('.').filter(f=>f.startsWith('promptcountant-')&&f.endsWith('.vsix')).sort(); if(files.length) require('child_process').execSync('code-insiders --install-extension '+files[files.length-1], {stdio:'inherit'});\"",
     "uninstall:vsix": "code-insiders --uninstall-extension smaglio81.promptcountant",
     "reinstall:vsix": "npm run uninstall:vsix && npm run install:vsix"
@@ -124,7 +124,7 @@
     "sql.js": "^1.12.0"
   },
   "devDependencies": {
-    "@vscode/vsce": "latest",
+    "@vscode/vsce": "^3.9.1",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.0",

@@ -74,8 +74,9 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
         case 'ready':
           // Reload from disk before posting — the worker may have completed
           // while _view was null (sidebar not yet open), so the in-memory DB
-          // could be stale. Matches the behaviour of the 'refresh' button.
-          this.db.reload();
+          // could be stale. Uses mtime guard to skip unnecessary I/O when
+          // the file has not changed since the last load.
+          this.db.reloadIfChanged();
           this.postData();
           break;
         case 'refresh':
