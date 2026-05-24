@@ -36,7 +36,9 @@ export class PromptAnalyzerDb {
     const SQL: any = await initSqlJs({ locateFile: () => wasmPath });
 
     let db: SqlDb;
+    let initialMtime = 0;
     if (fs.existsSync(dbPath)) {
+      try { initialMtime = fs.statSync(dbPath).mtimeMs; } catch { /* ignore */ }
       const fileBuffer = fs.readFileSync(dbPath);
       db = new SQL.Database(fileBuffer);
     } else {
@@ -44,6 +46,7 @@ export class PromptAnalyzerDb {
     }
 
     const instance = new PromptAnalyzerDb(db, SQL, dbPath);
+    instance._loadedMtime = initialMtime;
     instance.initialize();
     return instance;
   }

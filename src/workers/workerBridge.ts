@@ -47,6 +47,7 @@ export class WorkerBridge {
           this.onError(
             (msg.payload as { message?: string })?.message ?? 'Unknown worker error'
           );
+          this.worker = null;
           break;
       }
     });
