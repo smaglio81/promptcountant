@@ -6,6 +6,8 @@ See how much your GitHub Copilot chat conversations are costing you — directly
 
 Promptcountant reads GitHub Copilot's on-disk chat history, adds up the tokens you've sent and received per model, and shows the estimated dollar cost for every session, every workspace, and your machine as a whole.
 
+![Promptcountant](resources/prompcountant-main.png)
+
 ## What it does
 
 Promptcountant adds a sidebar to the Activity Bar with three things:
