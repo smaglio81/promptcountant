@@ -4,7 +4,7 @@ import { WorkerMessage } from '../types';
 
 interface WorkerData {
   dbPath: string;
-  workspaceStoragePath: string;
+  workspaceStoragePaths: string[];
 }
 
 const data = workerData as WorkerData;
@@ -38,7 +38,7 @@ process.on('unhandledRejection', reason => {
 
 runAggregation(
   data.dbPath,
-  data.workspaceStoragePath,
+  data.workspaceStoragePaths,
   sendMessage,
   () => paused
 ).catch(err => {

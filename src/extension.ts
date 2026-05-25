@@ -6,7 +6,7 @@ import { WorkerBridge } from './workers/workerBridge';
 import { SessionsSidebarProvider } from './ui/SessionsSidebarProvider';
 import { SessionDetailPanel } from './ui/SessionDetailPanel';
 import { ReportPanel } from './ui/ReportPanel';
-import { getWorkspaceStoragePathFromGlobal } from './utils/pathUtils';
+import { getWorkspaceStoragePathFromGlobal, allWorkspaceStoragePaths } from './utils/pathUtils';
 import { ReportScope } from './types';
 import { calculateTurnCost, refreshPricingCache } from './pricing/PricingService';
 
@@ -39,7 +39,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const workspaceStoragePath = getWorkspaceStoragePathFromGlobal(storageFsPath);
-  output.appendLine(`[activate] workspaceStoragePath=${workspaceStoragePath}`);
+  const workspaceStoragePaths = allWorkspaceStoragePaths(workspaceStoragePath);
+  output.appendLine(`[activate] workspaceStoragePaths=${workspaceStoragePaths.join(', ')}`);
 
   // ── Sidebar (single webview: filter + tree) ─────────────────────────────────
   const sidebar = new SessionsSidebarProvider(context.extensionUri, db, {
@@ -168,7 +169,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const workerStartedAt = Date.now();
   workerBridge = new WorkerBridge(
     dbPath,
-    workspaceStoragePath,
+    workspaceStoragePaths,
     /* onSessionAdded */ () => {
       db?.reload();
       sidebar.refresh();

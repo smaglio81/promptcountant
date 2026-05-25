@@ -4,6 +4,12 @@ All notable changes to the "Promptcountant" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.0]
+
+### Added
+
+- **Cross-variant session aggregation** — Promptcountant now reads Copilot chat sessions from *all* VS Code variants installed on your machine (stable **Code** and **Code - Insiders**) at the same time. Previously only the variant running the extension was scanned; now both are aggregated into a single view so no sessions are missed regardless of which VS Code you used for a conversation.
+
 ## [0.0.2]
 
 Release focused on UX polish, richer sidebar cost visibility, and report improvements.

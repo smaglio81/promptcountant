@@ -23,7 +23,7 @@ export type MessageSender = (msg: WorkerMessage) => void;
  */
 export async function runAggregation(
   dbPath: string,
-  workspaceStoragePath: string,
+  workspaceStoragePaths: string | string[],
   sendMessage: MessageSender,
   isPaused: () => boolean = () => false
 ): Promise<void> {
@@ -34,8 +34,9 @@ export async function runAggregation(
     // ── 1. Refresh pricing cache ──────────────────────────────────────────────
     await refreshPricingCache(db);
 
-    // ── 2. Discover workspaces ───────────────────────────────────────────────
-    const workspaces = discoverWorkspaces(workspaceStoragePath);
+    // ── 2. Discover workspaces (across all VS Code variant paths) ────────────
+    const paths = Array.isArray(workspaceStoragePaths) ? workspaceStoragePaths : [workspaceStoragePaths];
+    const workspaces = paths.flatMap(p => discoverWorkspaces(p));
 
     const progress: AggregationProgress = {
       workspacesFound: workspaces.length,

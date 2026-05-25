@@ -76,7 +76,7 @@ describeIfData('integration: real Copilot workspaceStorage', () => {
     const dbPath = path.join(tmpDir, 'integration.db');
 
     const messages: WorkerMessage[] = [];
-    await runAggregation(dbPath, realWorkspaceStorage, msg => messages.push(msg));
+    await runAggregation(dbPath, [realWorkspaceStorage], msg => messages.push(msg));
 
     const db = await PromptAnalyzerDb.create(dbPath);
     try {

@@ -51,6 +51,7 @@ export function directoryExists(dirPath: string): boolean {
 /**
  * Best-effort default workspaceStorage path for the current platform,
  * used as a fallback when extension context is not available (e.g., in tests).
+ * Prefers Code Insiders over stable Code.
  */
 export function defaultWorkspaceStoragePath(): string {
   const home = os.homedir();
@@ -75,4 +76,41 @@ export function defaultWorkspaceStoragePath(): string {
       return path.join(configBase, 'Code', 'User', 'workspaceStorage');
     }
   }
+}
+
+/**
+ * Returns all existing workspaceStorage directories across known VS Code variants
+ * (stable and Insiders) for the current platform, derived from the running
+ * instance's own workspaceStorage path.
+ *
+ * The current instance's path is always included. Sibling variant paths are
+ * included only if they exist on disk.
+ */
+export function allWorkspaceStoragePaths(currentInstancePath: string): string[] {
+  // currentInstancePath layout: <appData>/<variant>/User/workspaceStorage
+  const userDir    = path.dirname(currentInstancePath); // .../User
+  const variantDir = path.dirname(userDir);             // .../Code - Insiders
+  const appDataDir = path.dirname(variantDir);          // .../AppData/Roaming (or equiv.)
+
+  const variantNames =
+    process.platform === 'linux'
+      ? ['code', 'code-insiders', 'Code', 'Code - Insiders', 'Code - OSS']
+      : ['Code', 'Code - Insiders'];
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  // Always include the running instance first.
+  seen.add(currentInstancePath);
+  result.push(currentInstancePath);
+
+  for (const name of variantNames) {
+    const candidate = path.join(appDataDir, name, 'User', 'workspaceStorage');
+    if (!seen.has(candidate) && directoryExists(candidate)) {
+      seen.add(candidate);
+      result.push(candidate);
+    }
+  }
+
+  return result;
 }

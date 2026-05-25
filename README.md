@@ -72,6 +72,8 @@ The Refresh, Collapse All, and Recompute Costs commands are also available as ic
 
 Promptcountant reads files that GitHub Copilot already writes to your machine — it does not call any external API for your chat content and does not send your prompts anywhere. The only network call is fetching the public Copilot pricing table from `raw.githubusercontent.com`, cached for 24 hours.
 
+Sessions are collected from **all VS Code variants** installed on your machine. Both the stable **Code** install and **Code - Insiders** are scanned automatically, so activity from either variant appears in the same sidebar.
+
 Your aggregated session data is stored locally in a small SQLite database inside the extension's storage folder.
 
 ## Issues & Feedback
