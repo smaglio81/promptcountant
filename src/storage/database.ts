@@ -518,13 +518,16 @@ export class PromptAnalyzerDb {
   }
 
   /**
-   * Clears all stored turns and the processed-files watermark so the next
-   * background scan re-parses every session from scratch. Sessions metadata
-   * is preserved. Prefer `recomputeAllCosts` unless the parser itself changed.
+   * Clears all data (turns, sessions, workspaces, and the processed-files
+   * watermark) so the next background scan re-discovers and re-parses
+   * everything from scratch. Prefer `recomputeAllCosts` unless the parser
+   * itself changed or you want a completely fresh slate.
    */
   resetForReprocess(): void {
     this.run(`DELETE FROM turns`);
     this.run(`DELETE FROM processed_files`);
+    this.run(`DELETE FROM sessions`);
+    this.run(`DELETE FROM workspaces`);
     this.save();
   }
 

@@ -98,4 +98,11 @@ describe('buildReportHtml', () => {
     const h = html([]);
     expect(h).toContain('No usage data yet.');
   });
+
+  it('renders a <circle> for a day bucket with a single model (avoids degenerate arc)', () => {
+    // When all tokens belong to one model the arc start === end and SVG renders nothing.
+    // The fix emits a <circle> element instead.
+    const h = html([row({ model_id: 'gpt-4o', input_tokens: 1000, output_tokens: 500 })]);
+    expect(h).toContain('<circle');
+  });
 });

@@ -4,6 +4,19 @@ All notable changes to the "Promptcountant" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.0]
+
+### Added
+
+- **Scan progress banner** — a spinner strip now appears at the top of the sidebar whenever a background scan is running (initial load, refresh, or full re-scan). The banner shows live progress (`Scanning sessions: 4/31 (13%) — 240 turns`) and disappears automatically when the scan completes. Previously the progress text was only visible while the tree was empty, so re-scans on an already-populated sidebar showed no feedback.
+- **"Clear Database & Re-scan All Sessions" toolbar button** — the full wipe-and-rescan command now has a `$(sync)` icon button in the sidebar title bar alongside Collapse All, Refresh, and Recompute Costs. Previously it was only reachable via the Command Palette.
+- **Legacy Copilot session files** — Promptcountant now reads `.json` session files written by older versions of GitHub Copilot (pre-February 2026). Those sessions appear in the sidebar alongside current `.jsonl` sessions with no extra configuration.
+
+### Changed
+
+- **"Clear Database & Re-scan" no longer shows a confirmation dialog** — the command fires immediately when clicked.
+- **Filter searches workspaces and sessions** — the search placeholder now reads “Filter workspaces & sessions…” to make it clear that typing a workspace name will narrow the tree to that workspace (this capability was already present but not communicated).
+
 ## [0.1.0]
 
 ### Added

@@ -3,7 +3,9 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   parseChatSessionFile,
-  listSessionIds
+  listSessionIds,
+  listSessionFiles,
+  resolveSessionFilePath
 } from '../src/providers/copilot/chatSessionsParser';
 
 function writeLines(filePath: string, lines: object[]): void {
@@ -39,6 +41,70 @@ describe('chatSessionsParser', () => {
 
     it('returns empty array for nonexistent directory', () => {
       expect(listSessionIds(path.join(tmpDir, 'does-not-exist'))).toEqual([]);
+    });
+  });
+
+  // ── listSessionFiles ──────────────────────────────────────────────────────
+
+  describe('listSessionFiles', () => {
+    it('returns both .jsonl and .json session files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'abc123.jsonl'), '');
+      fs.writeFileSync(path.join(tmpDir, 'def456.json'), '');
+      fs.writeFileSync(path.join(tmpDir, 'ignored.txt'), '');
+
+      const files = listSessionFiles(tmpDir);
+      const ids = files.map(f => f.sessionId).sort();
+      expect(ids).toEqual(['abc123', 'def456']);
+    });
+
+    it('.jsonl takes precedence when both .jsonl and .json exist for the same session ID', () => {
+      fs.writeFileSync(path.join(tmpDir, 'abc123.jsonl'), '');
+      fs.writeFileSync(path.join(tmpDir, 'abc123.json'), '');
+
+      const files = listSessionFiles(tmpDir);
+      expect(files).toHaveLength(1);
+      expect(files[0].sessionId).toBe('abc123');
+      expect(files[0].filePath).toMatch(/\.jsonl$/);
+    });
+
+    it('filePaths are absolute and point to the correct files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'sess1.jsonl'), '');
+      const files = listSessionFiles(tmpDir);
+      expect(files[0].filePath).toBe(path.join(tmpDir, 'sess1.jsonl'));
+    });
+
+    it('returns empty array for an empty directory', () => {
+      expect(listSessionFiles(tmpDir)).toEqual([]);
+    });
+
+    it('returns empty array for a nonexistent directory', () => {
+      expect(listSessionFiles(path.join(tmpDir, 'does-not-exist'))).toEqual([]);
+    });
+  });
+
+  // ── resolveSessionFilePath ─────────────────────────────────────────────────
+
+  describe('resolveSessionFilePath', () => {
+    it('returns the .jsonl path when the file exists', () => {
+      const expected = path.join(tmpDir, 'sess1.jsonl');
+      fs.writeFileSync(expected, '');
+      expect(resolveSessionFilePath(tmpDir, 'sess1')).toBe(expected);
+    });
+
+    it('falls back to the .json path when .jsonl does not exist', () => {
+      const expected = path.join(tmpDir, 'sess1.json');
+      fs.writeFileSync(expected, '');
+      expect(resolveSessionFilePath(tmpDir, 'sess1')).toBe(expected);
+    });
+
+    it('prefers .jsonl over .json when both exist', () => {
+      fs.writeFileSync(path.join(tmpDir, 'sess1.jsonl'), '');
+      fs.writeFileSync(path.join(tmpDir, 'sess1.json'), '');
+      expect(resolveSessionFilePath(tmpDir, 'sess1')).toMatch(/\.jsonl$/);
+    });
+
+    it('returns the .jsonl path when neither file exists', () => {
+      expect(resolveSessionFilePath(tmpDir, 'missing')).toMatch(/missing\.jsonl$/);
     });
   });
 
@@ -300,7 +366,153 @@ describe('chatSessionsParser', () => {
       expect(result!.turns.map(t => t.requestId)).toEqual(['a', 'b', 'c']);
     });
 
-    it('kind=2 followed by kind=1 patches updates the appended request', () => {
+  });
+
+  // ── parseChatSessionFile (legacy JSON format) ──────────────────────────────
+
+  describe('parseChatSessionFile (legacy .json format)', () => {
+    const SESSION_ID = 'legacy-session-1';
+    const WORKSPACE_HASH = 'abc123hash';
+
+    function writeLegacyJson(filePath: string, data: object): void {
+      fs.writeFileSync(filePath, JSON.stringify(data), 'utf8');
+    }
+
+    it('parses a minimal legacy JSON session file', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        selectedModel: { id: 'copilot/gpt-4o' },
+        requests: []
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result).not.toBeNull();
+      expect(result!.sessionInfo.sessionId).toBe(SESSION_ID);
+      expect(result!.sessionInfo.workspaceHash).toBe(WORKSPACE_HASH);
+      expect(result!.sessionInfo.telemetryDisabled).toBe(true);
+      expect(result!.turns).toHaveLength(0);
+    });
+
+    it('extracts token counts from response.result.metadata', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        requests: [{
+          message: { text: 'Hello' },
+          response: {
+            result: {
+              metadata: { promptTokens: 100, outputTokens: 50, modelId: 'copilot/gpt-4o' },
+              timings: { requestSent: 1700000001000 }
+            }
+          }
+        }]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result!.turns).toHaveLength(1);
+      const turn = result!.turns[0];
+      expect(turn.estimatedPromptTokens).toBe(100);
+      expect(turn.completionTokens).toBe(50);
+      expect(turn.modelId).toBe('copilot/gpt-4o');
+      expect(turn.timestamp).toBe(1700000001000);
+    });
+
+    it('falls back to response.result.usage when metadata tokens are absent', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        requests: [{
+          message: { text: 'Hi' },
+          response: {
+            result: {
+              usage: { promptTokens: 200, completionTokens: 80 },
+              timings: { requestSent: 1700000001000 }
+            }
+          }
+        }]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      const turn = result!.turns[0];
+      expect(turn.estimatedPromptTokens).toBe(200);
+      expect(turn.completionTokens).toBe(80);
+    });
+
+    it('uses char-count estimate when no token fields are present', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        requests: [{ message: { text: 'A'.repeat(400) }, response: { result: {} } }]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result!.turns[0].estimatedPromptTokens).toBe(100); // 400 / 4
+    });
+
+    it('uses top-level selectedModel.id when metadata has no modelId', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        selectedModel: { id: 'copilot/claude-sonnet-4.6' },
+        requests: [{
+          message: { text: 'Hi' },
+          response: { result: { metadata: { promptTokens: 10, outputTokens: 5 } } }
+        }]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result!.turns[0].modelId).toBe('copilot/claude-sonnet-4.6');
+    });
+
+    it('generates stable synthetic requestIds per request index', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        requests: [
+          { message: { text: 'first' }, response: { result: {} } },
+          { message: { text: 'second' }, response: { result: {} } }
+        ]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result!.turns[0].requestId).toBe(`${SESSION_ID}:0`);
+      expect(result!.turns[1].requestId).toBe(`${SESSION_ID}:1`);
+    });
+
+    it('falls back to creationDate timestamp when result.timings are absent', () => {
+      const filePath = path.join(tmpDir, `${SESSION_ID}.json`);
+      writeLegacyJson(filePath, {
+        sessionId: SESSION_ID,
+        creationDate: 1700000000000,
+        requests: [{
+          message: { text: 'Hi' },
+          response: { result: { metadata: { promptTokens: 10, outputTokens: 5 } } }
+        }]
+      });
+
+      const result = parseChatSessionFile(filePath, SESSION_ID, WORKSPACE_HASH);
+      expect(result!.turns[0].timestamp).toBe(1700000000000);
+    });
+
+    it('returns null for a nonexistent .json file', () => {
+      expect(parseChatSessionFile(
+        path.join(tmpDir, 'missing.json'), SESSION_ID, WORKSPACE_HASH
+      )).toBeNull();
+    });
+  });
+
+  describe('parseChatSessionFile (JSONL — continued)', () => {
+    const SESSION_ID = 'test-session-1';
+    const WORKSPACE_HASH = 'abc123hash';
+
+    it('kind=2 followed by kind=1 patches updates the appended request — continued', () => {
       const filePath = path.join(tmpDir, `${SESSION_ID}.jsonl`);
       writeLines(filePath, [
         { kind: 0, v: { sessionId: SESSION_ID, creationDate: 1700000000000, requests: [] } },

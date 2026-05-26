@@ -340,4 +340,36 @@ describe('PromptAnalyzerDb', () => {
       reloadSpy.mockRestore();
     });
   });
+
+  // ── resetForReprocess ───────────────────────────────────────────────────────
+
+  describe('resetForReprocess', () => {
+    it('clears turns, sessions, workspaces, and processed_files', () => {
+      const workspace: WorkspaceInfo = {
+        hash: 'wsr', displayName: 'reset-ws', workspacePath: null
+      };
+      const session: SessionInfo = {
+        sessionId: 'sess-reset', workspaceHash: 'wsr', displayName: 'Reset Session',
+        chatSessionsPath: '/p', telemetryDisabled: false, createdAt: null
+      };
+      const turn: TurnInfo = {
+        requestId: 'req-r1', sessionId: 'sess-reset', timestamp: 1700000000000,
+        modelId: 'copilot/gpt-4o', completionTokens: 10,
+        estimatedPromptTokens: 5, cacheEligibleTokens: 0,
+        elapsedMs: null, messageText: '', isCompleted: true, estimatedCost: null
+      };
+
+      db.upsertWorkspace(workspace);
+      db.upsertSession(session);
+      db.upsertTurns([turn]);
+      db.setProcessedFile('/path/file.jsonl', 1700000000000);
+
+      db.resetForReprocess();
+
+      expect(db.getWorkspaces()).toHaveLength(0);
+      expect(db.getSessions()).toHaveLength(0);
+      expect(db.getTurns('sess-reset')).toHaveLength(0);
+      expect(db.getProcessedFile('/path/file.jsonl')).toBeNull();
+    });
+  });
 });

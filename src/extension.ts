@@ -7,6 +7,7 @@ import { SessionsSidebarProvider } from './ui/SessionsSidebarProvider';
 import { SessionDetailPanel } from './ui/SessionDetailPanel';
 import { ReportPanel } from './ui/ReportPanel';
 import { getWorkspaceStoragePathFromGlobal, allWorkspaceStoragePaths } from './utils/pathUtils';
+import { resolveSessionFilePath } from './providers/copilot/chatSessionsParser';
 import { ReportScope } from './types';
 import { calculateTurnCost, refreshPricingCache } from './pricing/PricingService';
 
@@ -73,7 +74,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     },
     onRevealSessionFile: async (sessionId: string, chatSessionsPath: string) => {
-      const jsonlPath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+      const jsonlPath = resolveSessionFilePath(chatSessionsPath, sessionId);
       try {
         await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(jsonlPath));
       } catch (err) {
@@ -139,12 +140,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     vscode.commands.registerCommand('promptcountant.resetDatabase', async () => {
-      const choice = await vscode.window.showWarningMessage(
-        'Clear the turn cache and re-parse every Copilot session log? Slower than "Recompute Costs" — use this only if you suspect the on-disk database is corrupt.',
-        { modal: true },
-        'Clear & Re-scan'
-      );
-      if (choice !== 'Clear & Re-scan') return;
       try {
         workerBridge?.stop();
         db?.resetForReprocess();

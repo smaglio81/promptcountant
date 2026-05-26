@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { PromptAnalyzerDb } from '../storage/database';
-import { parseChatSessionFile } from '../providers/copilot/chatSessionsParser';
+import { parseChatSessionFile, resolveSessionFilePath } from '../providers/copilot/chatSessionsParser';
 import { buildSessionDetailHtml } from './sessionDetailHtml';
 
 /**
@@ -107,7 +107,7 @@ export class SessionDetailPanel {
     requestId: string,
     chatSessionsPath: string
   ): void {
-    const filePath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+    const filePath = resolveSessionFilePath(chatSessionsPath, sessionId);
     const parsed = parseChatSessionFile(filePath, sessionId, '');
     if (!parsed) return;
     const turn = parsed.turns.find(t => t.requestId === requestId);
@@ -128,7 +128,7 @@ export class SessionDetailPanel {
       );
       return;
     }
-    const jsonlPath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+    const jsonlPath = resolveSessionFilePath(chatSessionsPath, sessionId);
     try {
       await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(jsonlPath));
     } catch (err) {
@@ -153,7 +153,7 @@ export class SessionDetailPanel {
       );
       return;
     }
-    const jsonlPath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+    const jsonlPath = resolveSessionFilePath(chatSessionsPath, sessionId);
     try {
       // Warn before opening files larger than 500 KB — these JSONL logs can
       // grow to several megabytes and may freeze the editor briefly.

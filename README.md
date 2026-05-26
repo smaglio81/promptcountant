@@ -12,7 +12,7 @@ Promptcountant reads GitHub Copilot's on-disk chat history, adds up the tokens y
 
 Promptcountant adds a sidebar to the Activity Bar with three things:
 
-- **Search box** — type to filter the session list in real time.
+- **Search box** — type to filter the session list in real time. The filter matches both session names and workspace names.
 - **Session tree** — every Copilot chat session you have ever had, grouped by workspace, sorted most-recent-first. Each workspace shows its total estimated cost, and the root Copilot node shows your grand total across all workspaces.
 - **Reports** — open a summary scoped to a single session, a single workspace, or everything across your machine. Each report breaks down total tokens and estimated cost per model.
 - **Time range filter** — a range selector in the report header (7 days · 30 days · 90 days · All) instantly updates all KPI totals and tab content.
@@ -59,14 +59,12 @@ Values are USD per 1 million tokens.
 
 ## Commands
 
-All commands are available from the Command Palette under the **Promptcountant** category:
+All commands are available from the Command Palette under the **Promptcountant** category. The most-used commands also appear as icon buttons in the sidebar title bar:
 
-- **Refresh** — re-scan for new sessions and turns.
-- **Collapse All** — collapse all workspaces in the sidebar tree.
-- **Recompute Costs (Fast)** — re-apply current pricing to every stored turn without re-parsing the source files. Useful after editing `promptcountant.customPrices` or after the pricing catalog updates.
-- **Clear Database & Re-scan All Sessions** — wipe the local cache and rebuild from scratch. Use this if something looks wrong.
-
-The Refresh, Collapse All, and Recompute Costs commands are also available as icons in the sidebar's title bar.
+- **Refresh** `$(refresh)` — re-scan for new sessions and turns.
+- **Collapse All** `$(collapse-all)` — collapse all workspaces in the sidebar tree.
+- **Recompute Costs (Fast)** `$(zap)` — re-apply current pricing to every stored turn without re-parsing the source files. Useful after editing `promptcountant.customPrices` or after the pricing catalog updates.
+- **Clear Database & Re-scan All Sessions** `$(sync)` — wipe the local cache and rebuild from scratch. Use this if something looks wrong or you want a completely fresh start. A progress banner appears in the sidebar while the re-scan runs.
 
 ## Where the data comes from
 

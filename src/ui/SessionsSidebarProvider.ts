@@ -213,6 +213,34 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
       line-height: 1;
       font-size: 14px;
     }
+    .scan-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px 4px;
+      font-size: 0.85em;
+      color: var(--vscode-descriptionForeground);
+      background: var(--vscode-sideBar-background, transparent);
+      border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border, transparent));
+      flex: 0 0 auto;
+      overflow: hidden;
+    }
+    .scan-status[hidden] { display: none; }
+    .scan-spinner {
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid var(--vscode-descriptionForeground);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .scan-status-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .filter-clear.visible { display: inline-block; }
 
     .tree {
@@ -309,8 +337,12 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
   <div class="filter-wrap">
-    <input id="filter" type="text" placeholder="Filter sessions…" autocomplete="off" spellcheck="false" />
+    <input id="filter" type="text" placeholder="Filter workspaces &amp; sessions…" autocomplete="off" spellcheck="false" />
     <button id="filter-clear" class="filter-clear" aria-label="Clear filter" title="Clear filter">×</button>
+  </div>
+  <div id="scan-status" class="scan-status" hidden>
+    <div class="scan-spinner"></div>
+    <span id="scan-status-text" class="scan-status-text"></span>
   </div>
   <div id="tree" class="tree"></div>
   <div id="ctx-menu" class="ctx-menu" role="menu"></div>
@@ -361,10 +393,20 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     }
 
     function render() {
+      // Update the persistent scan-status banner (shown whenever a scan is running,
+      // regardless of whether the tree has data).
+      const scanStatusEl = document.getElementById('scan-status');
+      const scanStatusText = document.getElementById('scan-status-text');
+      if (state.status) {
+        scanStatusText.textContent = state.status;
+        scanStatusEl.removeAttribute('hidden');
+      } else {
+        scanStatusEl.setAttribute('hidden', '');
+      }
+
       const tree = document.getElementById('tree');
       if (!state.data || state.data.length === 0) {
-        const status = state.status ? escapeHtml(state.status) : 'No Copilot sessions found yet — scanning…';
-        tree.innerHTML = '<div class="empty-msg">' + status + '</div>';
+        tree.innerHTML = '<div class="empty-msg">No Copilot sessions found yet.</div>';
         return;
       }
 

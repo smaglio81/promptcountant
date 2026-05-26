@@ -2,6 +2,49 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SessionInfo, TurnInfo } from '../../types';
 
+// ─── Legacy JSON file shape (pre-Feb 2026 single-object format) ──────────────
+
+interface LegacySelectedModel {
+  id?: string;
+  identifier?: string;
+}
+
+interface LegacyRequestResult {
+  metadata?: {
+    promptTokens?: number;
+    outputTokens?: number;
+    modelId?: string;
+    toolCallRounds?: unknown[];
+  };
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+  };
+  timings?: {
+    requestSent?: number;
+    firstTokenReceived?: number;
+  };
+  value?: string;
+}
+
+interface LegacyResponseItem {
+  value?: string | { content?: string };
+  content?: string;
+}
+
+interface LegacyRequest {
+  message?: { text?: string };
+  variableData?: { variables?: Array<{ value?: unknown }> };
+  response?: LegacyResponseItem[] | { result?: LegacyRequestResult };
+}
+
+interface LegacySessionFile {
+  sessionId?: string;
+  creationDate?: number;
+  selectedModel?: LegacySelectedModel;
+  requests?: LegacyRequest[];
+}
+
 // ─── JSONL line shapes ────────────────────────────────────────────────────────
 
 interface SnapshotLine {
@@ -86,10 +129,215 @@ export function listSessionIds(chatSessionsPath: string): string[] {
 }
 
 /**
+ * Lists all session files in a chatSessions directory, covering both the
+ * current JSONL format and the legacy single-object JSON format (pre-Feb 2026).
+ * JSONL files take precedence: if a session exists as both .jsonl and .json
+ * (shouldn't happen in practice), only the JSONL entry is returned.
+ */
+export function listSessionFiles(
+  chatSessionsPath: string
+): Array<{ sessionId: string; filePath: string }> {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(chatSessionsPath, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const results: Array<{ sessionId: string; filePath: string }> = [];
+
+  for (const e of entries) {
+    if (!e.isFile()) continue;
+    if (e.name.endsWith('.jsonl')) {
+      const sessionId = e.name.slice(0, -6);
+      seen.add(sessionId);
+      results.push({ sessionId, filePath: path.join(chatSessionsPath, e.name) });
+    }
+  }
+
+  for (const e of entries) {
+    if (!e.isFile()) continue;
+    if (e.name.endsWith('.json')) {
+      const sessionId = e.name.slice(0, -5);
+      if (!seen.has(sessionId)) {
+        seen.add(sessionId);
+        results.push({ sessionId, filePath: path.join(chatSessionsPath, e.name) });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Resolves the on-disk session file path for a given session ID, trying the
+ * current JSONL format first and falling back to the legacy JSON format.
+ * Returns the JSONL path even if neither file exists (callers handle absence).
+ */
+export function resolveSessionFilePath(chatSessionsPath: string, sessionId: string): string {
+  const jsonlPath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+  if (fs.existsSync(jsonlPath)) return jsonlPath;
+  const jsonPath = path.join(chatSessionsPath, `${sessionId}.json`);
+  if (fs.existsSync(jsonPath)) return jsonPath;
+  return jsonlPath;
+}
+
+/**
+ * Parses a single chatSessions JSONL file and extracts session metadata
+ * and all completed LLM turns. Dispatches to the legacy JSON parser when
+ * the path ends with `.json`.
+ */
+export function parseChatSessionFile(
+  filePath: string,
+  sessionId: string,
+  workspaceHash: string
+): ParsedChatSession | null {
+  if (filePath.endsWith('.json')) {
+    return parseLegacyChatSessionFile(filePath, sessionId, workspaceHash);
+  }
+  return parseJsonlChatSessionFile(filePath, sessionId, workspaceHash);
+}
+
+/**
+ * Parses a legacy (pre-Feb 2026) single-object .json session file.
+ */
+function parseLegacyChatSessionFile(
+  filePath: string,
+  sessionId: string,
+  workspaceHash: string
+): ParsedChatSession | null {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+
+  let data: LegacySessionFile;
+  try {
+    data = JSON.parse(raw) as LegacySessionFile;
+  } catch {
+    return null;
+  }
+
+  if (typeof data !== 'object' || data === null) return null;
+
+  const resolvedSessionId = data.sessionId || sessionId;
+  const createdAt = typeof data.creationDate === 'number' ? data.creationDate : null;
+  const customTitle = null; // legacy format has no custom title field
+  const displayName = customTitle ?? formatFallbackTitle(createdAt);
+  const chatSessionsPath = path.dirname(filePath);
+
+  const topLevelModelId =
+    (typeof data.selectedModel?.id === 'string' ? data.selectedModel.id : null) ??
+    (typeof data.selectedModel?.identifier === 'string' ? data.selectedModel.identifier : null) ??
+    '';
+
+  const sessionInfo: SessionInfo = {
+    sessionId: resolvedSessionId,
+    workspaceHash,
+    displayName,
+    chatSessionsPath,
+    createdAt,
+    telemetryDisabled: true // legacy files never have a paired debug-log
+  };
+
+  const requests = Array.isArray(data.requests) ? data.requests : [];
+  const turns: TurnInfo[] = [];
+
+  for (let idx = 0; idx < requests.length; idx++) {
+    const req = requests[idx];
+    if (!req || typeof req !== 'object') continue;
+
+    // ── Token counts ─────────────────────────────────────────────────────────
+    const resp = req.response;
+    const result: LegacyRequestResult | undefined =
+      !Array.isArray(resp) && typeof resp === 'object' && resp !== null
+        ? (resp as { result?: LegacyRequestResult }).result
+        : undefined;
+
+    const md = result?.metadata;
+    const usage = result?.usage;
+
+    let promptTokens: number =
+      (typeof md?.promptTokens === 'number' ? md.promptTokens : 0) ||
+      (typeof usage?.promptTokens === 'number' ? usage.promptTokens : 0);
+
+    let completionTokens: number | null =
+      (typeof md?.outputTokens === 'number' ? md.outputTokens : null) ??
+      (typeof usage?.completionTokens === 'number' ? usage.completionTokens : null);
+
+    // Fall back to char-count estimate when token fields are absent
+    const messageText = typeof req.message?.text === 'string' ? req.message.text : '';
+    if (!promptTokens && messageText.length > 0) {
+      promptTokens = Math.ceil(messageText.length / 4);
+    }
+    if (!completionTokens) {
+      completionTokens = estimateLegacyResponseTokens(req) || null;
+    }
+
+    // ── Model ─────────────────────────────────────────────────────────────────
+    const modelId =
+      (typeof md?.modelId === 'string' ? md.modelId : '') || topLevelModelId;
+
+    // ── Timestamp ─────────────────────────────────────────────────────────────
+    const timestamp =
+      (typeof result?.timings?.requestSent === 'number' ? result.timings.requestSent : null) ??
+      (typeof result?.timings?.firstTokenReceived === 'number' ? result.timings.firstTokenReceived : null) ??
+      createdAt ??
+      0;
+
+    // Use a stable synthetic requestId since legacy JSON has no request IDs
+    const requestId = `${resolvedSessionId}:${idx}`;
+
+    turns.push({
+      requestId,
+      sessionId: resolvedSessionId,
+      timestamp,
+      modelId,
+      resolvedModel: null,
+      completionTokens,
+      estimatedPromptTokens: promptTokens || null,
+      cacheEligibleTokens: 0,
+      elapsedMs: null,
+      messageText,
+      isCompleted: true,
+      estimatedCost: null
+    });
+  }
+
+  return { sessionInfo, turns };
+}
+
+function estimateLegacyResponseTokens(req: LegacyRequest): number {
+  const resp = req.response;
+  const parts: string[] = [];
+
+  if (Array.isArray(resp)) {
+    for (const item of resp) {
+      if (!item || typeof item !== 'object') continue;
+      const val = item.value;
+      if (typeof val === 'string') parts.push(val);
+      else if (typeof val === 'object' && val !== null && typeof (val as { content?: string }).content === 'string') {
+        parts.push((val as { content: string }).content);
+      }
+      if (typeof item.content === 'string') parts.push(item.content);
+    }
+  } else if (typeof resp === 'object' && resp !== null) {
+    const result = (resp as { result?: LegacyRequestResult }).result;
+    if (typeof result?.value === 'string') parts.push(result.value);
+  }
+
+  const total = parts.join('').length;
+  return total > 0 ? Math.ceil(total / 4) : 0;
+}
+
+/**
  * Parses a single chatSessions JSONL file and extracts session metadata
  * and all completed LLM turns.
  */
-export function parseChatSessionFile(
+function parseJsonlChatSessionFile(
   filePath: string,
   sessionId: string,
   workspaceHash: string

@@ -2,7 +2,7 @@
   "name": "promptcountant",
   "displayName": "Promptcountant",
   "description": "Analyze GitHub Copilot chat session token usage and estimated costs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "smaglio81",
   "repository": {
     "type": "git",
@@ -70,6 +70,7 @@
       {
         "command": "promptcountant.resetDatabase",
         "title": "Clear Database & Re-scan All Sessions",
+        "icon": "$(sync)",
         "category": "Promptcountant"
       }
     ],
@@ -89,6 +90,11 @@
           "command": "promptcountant.recomputeCosts",
           "when": "view == promptcountant.sessions",
           "group": "navigation@3"
+        },
+        {
+          "command": "promptcountant.resetDatabase",
+          "when": "view == promptcountant.sessions",
+          "group": "navigation@4"
         }
       ]
     },
