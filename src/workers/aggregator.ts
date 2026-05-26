@@ -67,6 +67,7 @@ export async function runAggregation(
         try {
           fileMtime = fs.statSync(filePath).mtimeMs;
         } catch {
+          progress.sessionsProcessed++;
           continue; // file disappeared
         }
 
@@ -82,7 +83,10 @@ export async function runAggregation(
 
         // ── Parse and store ─────────────────────────────────────────────────
         const parsed = parseChatSessionFile(filePath, sessionId, workspaceInfo.hash);
-        if (!parsed) continue;
+        if (!parsed) {
+          progress.sessionsProcessed++;
+          continue;
+        }
 
         // Upsert session
         const latestTurnTimestamp =

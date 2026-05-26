@@ -260,9 +260,9 @@ function parseLegacyChatSessionFile(
     const md = result?.metadata;
     const usage = result?.usage;
 
-    let promptTokens: number =
-      (typeof md?.promptTokens === 'number' ? md.promptTokens : 0) ||
-      (typeof usage?.promptTokens === 'number' ? usage.promptTokens : 0);
+    const rawPromptTokens: number | null =
+      (typeof md?.promptTokens === 'number' ? md.promptTokens : null) ??
+      (typeof usage?.promptTokens === 'number' ? usage.promptTokens : null);
 
     let completionTokens: number | null =
       (typeof md?.outputTokens === 'number' ? md.outputTokens : null) ??
@@ -270,9 +270,10 @@ function parseLegacyChatSessionFile(
 
     // Fall back to char-count estimate when token fields are absent
     const messageText = typeof req.message?.text === 'string' ? req.message.text : '';
-    if (!promptTokens && messageText.length > 0) {
-      promptTokens = Math.ceil(messageText.length / 4);
-    }
+    let promptTokens: number =
+      rawPromptTokens != null ? rawPromptTokens
+      : messageText.length > 0 ? Math.ceil(messageText.length / 4)
+      : 0;
     if (completionTokens == null) {
       completionTokens = estimateLegacyResponseTokens(req) ?? null;
     }
