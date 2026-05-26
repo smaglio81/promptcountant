@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { PromptAnalyzerDb } from '../storage/database';
 import { parseChatSessionFile, resolveSessionFilePath } from '../providers/copilot/chatSessionsParser';
 import { buildSessionDetailHtml } from './sessionDetailHtml';
+import { TurnInfo } from '../types';
 
 /**
  * A single reusable webview panel that renders the per-session breakdown.
@@ -14,6 +15,7 @@ export class SessionDetailPanel {
   private _disposables: vscode.Disposable[] = [];
   private _lastSessionId: string | null = null;
   private _lastChatSessionsPath: string | null = null;
+  private _parsedTurnsCache: { sessionId: string; turns: TurnInfo[] } | null = null;
 
   private constructor(
     _extensionUri: vscode.Uri,
@@ -71,6 +73,7 @@ export class SessionDetailPanel {
   private _loadSession(sessionId: string, chatSessionsPath: string): void {
     this._lastSessionId = sessionId;
     this._lastChatSessionsPath = chatSessionsPath;
+    this._parsedTurnsCache = null;
     try {
       const sessions = this.db.getSessions();
       const session = sessions.find(s => s.session_id === sessionId) ?? null;
@@ -106,10 +109,13 @@ export class SessionDetailPanel {
     requestId: string,
     chatSessionsPath: string
   ): void {
-    const filePath = resolveSessionFilePath(chatSessionsPath, sessionId);
-    const parsed = parseChatSessionFile(filePath, sessionId, '');
-    if (!parsed) return;
-    const turn = parsed.turns.find(t => t.requestId === requestId);
+    if (!this._parsedTurnsCache || this._parsedTurnsCache.sessionId !== sessionId) {
+      const filePath = resolveSessionFilePath(chatSessionsPath, sessionId);
+      const parsed = parseChatSessionFile(filePath, sessionId, '');
+      if (!parsed) return;
+      this._parsedTurnsCache = { sessionId, turns: parsed.turns };
+    }
+    const turn = this._parsedTurnsCache.turns.find(t => t.requestId === requestId);
     if (!turn) return;
     this._panel.webview.postMessage({ type: 'turnDetail', data: turn });
   }

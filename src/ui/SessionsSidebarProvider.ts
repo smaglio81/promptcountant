@@ -49,6 +49,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'promptcountant.sessions';
 
   private _view: vscode.WebviewView | undefined;
+  private _lastStatus: string | null = null;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -78,6 +79,9 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
           // the file has not changed since the last load.
           this.db.reloadIfChanged();
           this.postData();
+          // Replay the last scan status so the banner shows the correct state
+          // when the sidebar is opened after a scan has already started/completed.
+          this.setStatus(this._lastStatus);
           break;
         case 'refresh':
           this.db.reload();
@@ -117,6 +121,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
   /** Update the "scanning…" status line shown when the tree is empty
    *  or appended below the tree while data is loading. */
   setStatus(message: string | null): void {
+    this._lastStatus = message;
     this._view?.webview.postMessage({ type: 'status', message });
   }
 
@@ -355,7 +360,7 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
       expanded: new Set(), // workspace hashes the user has explicitly opened
       providerExpanded: true, // Copilot root: starts expanded
       filter: '',
-      status: 'Starting scan…'
+      status: ''
     };
 
     // Persist UI state across reloads of the webview

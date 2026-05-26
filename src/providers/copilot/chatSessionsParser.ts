@@ -274,7 +274,7 @@ function parseLegacyChatSessionFile(
       promptTokens = Math.ceil(messageText.length / 4);
     }
     if (completionTokens == null) {
-      completionTokens = estimateLegacyResponseTokens(req) || null;
+      completionTokens = estimateLegacyResponseTokens(req) ?? null;
     }
 
     // ── Model ─────────────────────────────────────────────────────────────────
