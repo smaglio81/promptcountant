@@ -48,6 +48,7 @@ export async function runAggregation(
 
     // ── 3. Process each workspace ────────────────────────────────────────────
     let batchSize = INITIAL_BATCH_SIZE;
+    let lastSkipProgressSent = 0;
 
     for (const { workspaceInfo, chatSessionsPath } of workspaces) {
       await waitIfPaused(isPaused);
@@ -56,6 +57,7 @@ export async function runAggregation(
 
       const sessionFiles = listSessionFiles(chatSessionsPath);
       progress.sessionsFound += sessionFiles.length;
+      sendMessage({ type: 'progress', payload: { ...progress } });
 
       for (const { sessionId, filePath } of sessionFiles) {
         await waitIfPaused(isPaused);
@@ -71,6 +73,10 @@ export async function runAggregation(
         const processed = db.getProcessedFile(filePath);
         if (processed && processed.last_modified >= fileMtime) {
           progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
           continue; // already up-to-date
         }
 

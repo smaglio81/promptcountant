@@ -273,7 +273,7 @@ function parseLegacyChatSessionFile(
     if (!promptTokens && messageText.length > 0) {
       promptTokens = Math.ceil(messageText.length / 4);
     }
-    if (!completionTokens) {
+    if (completionTokens == null) {
       completionTokens = estimateLegacyResponseTokens(req) || null;
     }
 

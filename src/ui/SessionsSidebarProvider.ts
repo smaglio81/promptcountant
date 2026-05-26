@@ -340,8 +340,8 @@ export class SessionsSidebarProvider implements vscode.WebviewViewProvider {
     <input id="filter" type="text" placeholder="Filter workspaces &amp; sessions…" autocomplete="off" spellcheck="false" />
     <button id="filter-clear" class="filter-clear" aria-label="Clear filter" title="Clear filter">×</button>
   </div>
-  <div id="scan-status" class="scan-status" hidden>
-    <div class="scan-spinner"></div>
+  <div id="scan-status" class="scan-status" role="status" aria-live="polite" hidden>
+    <div class="scan-spinner" aria-hidden="true"></div>
     <span id="scan-status-text" class="scan-status-text"></span>
   </div>
   <div id="tree" class="tree"></div>
