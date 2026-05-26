@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { PromptAnalyzerDb } from '../storage/database';
 import { parseChatSessionFile, resolveSessionFilePath } from '../providers/copilot/chatSessionsParser';
 import { buildSessionDetailHtml } from './sessionDetailHtml';
@@ -116,8 +115,8 @@ export class SessionDetailPanel {
   }
 
   private async _openInExplorer(workspacePath: string | null): Promise<void> {
-    // Reveal the session's .jsonl file in the OS file manager. The
-    // workspacePath argument is kept for the existing webview message shape
+    // Reveal the session file (.jsonl or legacy .json) in the OS file manager.
+    // The workspacePath argument is kept for the existing webview message shape
     // but unused — we always target the data file the panel was built from.
     void workspacePath;
     const sessionId = this._lastSessionId;
@@ -140,7 +139,7 @@ export class SessionDetailPanel {
 
   private async _openInCode(workspacePath: string | null): Promise<void> {
     // For "Open in Code" we want to inspect the raw session payload, so we
-    // open the session's main.jsonl file in a new editor tab. The
+    // open the session file (.jsonl or legacy .json) in a new editor tab. The
     // workspacePath parameter is retained for the webview message shape but
     // unused here — we know the chatSessionsPath/sessionId from state set
     // when the panel was last loaded.
@@ -153,14 +152,14 @@ export class SessionDetailPanel {
       );
       return;
     }
-    const jsonlPath = resolveSessionFilePath(chatSessionsPath, sessionId);
+    const sessionFilePath = resolveSessionFilePath(chatSessionsPath, sessionId);
     try {
       // Warn before opening files larger than 500 KB — these JSONL logs can
       // grow to several megabytes and may freeze the editor briefly.
       const LARGE_FILE_THRESHOLD_BYTES = 500 * 1024;
       let sizeBytes = 0;
       try {
-        sizeBytes = (await vscode.workspace.fs.stat(vscode.Uri.file(jsonlPath))).size;
+        sizeBytes = (await vscode.workspace.fs.stat(vscode.Uri.file(sessionFilePath))).size;
       } catch {
         // If we can't stat, just attempt to open and let openTextDocument fail.
       }
@@ -173,7 +172,7 @@ export class SessionDetailPanel {
         );
         if (choice !== 'Open') return;
       }
-      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(jsonlPath));
+      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(sessionFilePath));
       // Open in the active editor group (same tab grouping as the Details
       // View panel) per user request — keeps related tabs together rather
       // than spawning a new side group each time.
