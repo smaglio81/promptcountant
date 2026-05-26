@@ -299,7 +299,7 @@ function parseLegacyChatSessionFile(
       modelId,
       resolvedModel: null,
       completionTokens,
-      estimatedPromptTokens: promptTokens || null,
+      estimatedPromptTokens: rawPromptTokens != null ? rawPromptTokens : promptTokens > 0 ? promptTokens : null,
       cacheEligibleTokens: 0,
       elapsedMs: null,
       messageText,
@@ -311,7 +311,7 @@ function parseLegacyChatSessionFile(
   return { sessionInfo, turns };
 }
 
-function estimateLegacyResponseTokens(req: LegacyRequest): number {
+function estimateLegacyResponseTokens(req: LegacyRequest): number | null {
   const resp = req.response;
   const parts: string[] = [];
 
@@ -331,7 +331,7 @@ function estimateLegacyResponseTokens(req: LegacyRequest): number {
   }
 
   const total = parts.join('').length;
-  return total > 0 ? Math.ceil(total / 4) : 0;
+  return total > 0 ? Math.ceil(total / 4) : null;
 }
 
 /**

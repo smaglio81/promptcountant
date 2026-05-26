@@ -68,6 +68,10 @@ export async function runAggregation(
           fileMtime = fs.statSync(filePath).mtimeMs;
         } catch {
           progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
           continue; // file disappeared
         }
 
@@ -85,6 +89,10 @@ export async function runAggregation(
         const parsed = parseChatSessionFile(filePath, sessionId, workspaceInfo.hash);
         if (!parsed) {
           progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
           continue;
         }
 
