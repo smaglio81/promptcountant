@@ -128,9 +128,9 @@ export class SessionDetailPanel {
       );
       return;
     }
-    const jsonlPath = resolveSessionFilePath(chatSessionsPath, sessionId);
+    const sessionFilePath = resolveSessionFilePath(chatSessionsPath, sessionId);
     try {
-      await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(jsonlPath));
+      await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(sessionFilePath));
     } catch (err) {
       vscode.window.showErrorMessage(
         `Promptcountant: could not reveal session file — ${(err as Error).message}`

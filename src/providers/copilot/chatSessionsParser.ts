@@ -279,7 +279,7 @@ function parseLegacyChatSessionFile(
 
     // ── Model ─────────────────────────────────────────────────────────────────
     const modelId =
-      (typeof md?.modelId === 'string' ? md.modelId : '') || topLevelModelId;
+      (typeof md?.modelId === 'string' ? md.modelId : '') || topLevelModelId || '(unknown)';
 
     // ── Timestamp ─────────────────────────────────────────────────────────────
     const timestamp =
