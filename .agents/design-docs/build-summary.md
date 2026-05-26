@@ -3,6 +3,26 @@
 **Date built:** 2026-05-23  
 **Status:** ✅ All phases complete. All quality gates passed.
 
+## Post-Build Release Notes (v0.2.0)
+
+- SemVer classification: **minor**.
+- `package.json` version updated to `0.2.0`.
+- **Scan progress banner** added to sidebar — persistent spinner strip shows live scan progress even when the tree already has data. Previously only visible while the tree was empty.
+- **"Clear Database & Re-scan All Sessions"** promoted to the sidebar toolbar (previously command-palette only). Confirmation modal removed; fires immediately.
+- **Legacy `.json` session files** (pre-February 2026 Copilot format) are now parsed alongside current `.jsonl` files. No configuration required.
+- **Filter placeholder** updated to "Filter workspaces & sessions…" to communicate that workspace-name matching was already supported.
+- Unit test suite expanded to 142 tests (+19): coverage added for `listSessionFiles`, `resolveSessionFilePath`, legacy JSON parser, single-slice pie chart, and `resetForReprocess` clearing all four tables.
+
+## Post-Build Release Notes (v0.1.0)
+
+- SemVer classification: **minor**.
+- `package.json` version updated to `0.1.0`.
+- **Cross-variant session aggregation** — reads from both stable Code and Code-Insiders storage paths simultaneously.
+- `allWorkspaceStoragePaths()` added to `pathUtils.ts`; `WorkerBridge`, `aggregator`, and `extension.ts` updated to accept an array of paths.
+- `listSessionFiles()` and `resolveSessionFilePath()` added to `chatSessionsParser.ts`; legacy `.json` parser added.
+- `resetForReprocess()` now clears all four tables (workspaces, sessions, turns, processed_files).
+- Single-slice pie chart bug fixed (renders `<circle>` instead of degenerate arc path).
+
 ## Post-Build Release Notes (v0.0.2)
 
 - SemVer classification: **patch**.

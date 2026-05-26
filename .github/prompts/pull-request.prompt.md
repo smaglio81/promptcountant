@@ -27,6 +27,7 @@ metadata:
 * Push the latest commits to origin.
 
 * Create a Pull Request between the version branch and `main`.
+  * The subject should start with the version number, `vX.Y.Z - {compact description}`
   * Use CHANGELOG.md to create a Pull Request summary.
 
 * Once the Pull Request is created, the Copilot Reviewer should automatically review the PR.

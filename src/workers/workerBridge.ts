@@ -12,7 +12,7 @@ export class WorkerBridge {
 
   constructor(
     private readonly dbPath: string,
-    private readonly workspaceStoragePath: string,
+    private readonly workspaceStoragePaths: string[],
     private readonly onSessionAdded: OnSessionAdded,
     private readonly onProgress: OnProgress = () => undefined,
     private readonly onComplete: OnComplete = () => undefined,
@@ -27,7 +27,7 @@ export class WorkerBridge {
     this.worker = new Worker(workerScript, {
       workerData: {
         dbPath: this.dbPath,
-        workspaceStoragePath: this.workspaceStoragePath
+        workspaceStoragePaths: this.workspaceStoragePaths
       }
     });
 

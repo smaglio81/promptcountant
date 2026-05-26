@@ -1,8 +1,7 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import { PromptAnalyzerDb } from '../storage/database';
 import { discoverWorkspaces } from '../providers/copilot/workspaceResolver';
-import { listSessionIds, parseChatSessionFile } from '../providers/copilot/chatSessionsParser';
+import { listSessionFiles, parseChatSessionFile } from '../providers/copilot/chatSessionsParser';
 import { refreshPricingCache, calculateTurnCost } from '../pricing/PricingService';
 import { WorkerMessage, AggregationProgress, TurnInfo } from '../types';
 
@@ -23,7 +22,7 @@ export type MessageSender = (msg: WorkerMessage) => void;
  */
 export async function runAggregation(
   dbPath: string,
-  workspaceStoragePath: string,
+  workspaceStoragePaths: string | string[],
   sendMessage: MessageSender,
   isPaused: () => boolean = () => false
 ): Promise<void> {
@@ -34,8 +33,9 @@ export async function runAggregation(
     // ── 1. Refresh pricing cache ──────────────────────────────────────────────
     await refreshPricingCache(db);
 
-    // ── 2. Discover workspaces ───────────────────────────────────────────────
-    const workspaces = discoverWorkspaces(workspaceStoragePath);
+    // ── 2. Discover workspaces (across all VS Code variant paths) ────────────
+    const paths = Array.isArray(workspaceStoragePaths) ? workspaceStoragePaths : [workspaceStoragePaths];
+    const workspaces = paths.flatMap(p => discoverWorkspaces(p));
 
     const progress: AggregationProgress = {
       workspacesFound: workspaces.length,
@@ -48,37 +48,53 @@ export async function runAggregation(
 
     // ── 3. Process each workspace ────────────────────────────────────────────
     let batchSize = INITIAL_BATCH_SIZE;
+    let lastSkipProgressSent = 0;
 
     for (const { workspaceInfo, chatSessionsPath } of workspaces) {
       await waitIfPaused(isPaused);
 
       db.upsertWorkspace(workspaceInfo);
 
-      const sessionIds = listSessionIds(chatSessionsPath);
-      progress.sessionsFound += sessionIds.length;
+      const sessionFiles = listSessionFiles(chatSessionsPath);
+      progress.sessionsFound += sessionFiles.length;
+      sendMessage({ type: 'progress', payload: { ...progress } });
 
-      for (const sessionId of sessionIds) {
+      for (const { sessionId, filePath } of sessionFiles) {
         await waitIfPaused(isPaused);
-
-        const filePath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
 
         // ── Skip unchanged files ────────────────────────────────────────────
         let fileMtime: number;
         try {
           fileMtime = fs.statSync(filePath).mtimeMs;
         } catch {
+          progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
           continue; // file disappeared
         }
 
         const processed = db.getProcessedFile(filePath);
         if (processed && processed.last_modified >= fileMtime) {
           progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
           continue; // already up-to-date
         }
 
         // ── Parse and store ─────────────────────────────────────────────────
         const parsed = parseChatSessionFile(filePath, sessionId, workspaceInfo.hash);
-        if (!parsed) continue;
+        if (!parsed) {
+          progress.sessionsProcessed++;
+          if (Date.now() - lastSkipProgressSent > 500) {
+            sendMessage({ type: 'progress', payload: { ...progress } });
+            lastSkipProgressSent = Date.now();
+          }
+          continue;
+        }
 
         // Upsert session
         const latestTurnTimestamp =

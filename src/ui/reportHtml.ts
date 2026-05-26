@@ -451,6 +451,21 @@ function renderPieChart(slices: ModelSlice[]): string {
   const cy = r + 10;
   const total = slices.reduce((s, x) => s + x.tokens, 0);
   if (total === 0) return `<div class="muted">No data.</div>`;
+
+  const legend = slices
+    .map(s => `<li><span class="swatch" style="background:${colorForModel(s.model)}"></span><span class="model">${escapeHtml(s.model)}</span><span class="pct">${s.pct.toFixed(1)}%</span></li>`)
+    .join('');
+
+  // Single slice: SVG arc paths collapse to nothing when start === end, so
+  // render a plain circle instead.
+  if (slices.length === 1) {
+    const color = colorForModel(slices[0].model);
+    return `<div class="pie-wrap">
+    <svg viewBox="0 0 ${w} ${r * 2 + 20}" class="pie"><circle cx="${cx}" cy="${cy}" r="${r}" style="fill:${color}"></circle></svg>
+    <ul class="pie-legend">${legend}</ul>
+  </div>`;
+  }
+
   let acc = 0;
   const arcs: string[] = [];
   slices.forEach(s => {
@@ -465,9 +480,6 @@ function renderPieChart(slices: ModelSlice[]): string {
     const color = colorForModel(s.model);
     arcs.push(`<path class="slice" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z" style="fill:${color}"></path>`);
   });
-  const legend = slices
-    .map(s => `<li><span class="swatch" style="background:${colorForModel(s.model)}"></span><span class="model">${escapeHtml(s.model)}</span><span class="pct">${s.pct.toFixed(1)}%</span></li>`)
-    .join('');
   return `<div class="pie-wrap">
     <svg viewBox="0 0 ${w} ${r * 2 + 20}" class="pie">${arcs.join('')}</svg>
     <ul class="pie-legend">${legend}</ul>

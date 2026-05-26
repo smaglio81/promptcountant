@@ -6,7 +6,8 @@ import { WorkerBridge } from './workers/workerBridge';
 import { SessionsSidebarProvider } from './ui/SessionsSidebarProvider';
 import { SessionDetailPanel } from './ui/SessionDetailPanel';
 import { ReportPanel } from './ui/ReportPanel';
-import { getWorkspaceStoragePathFromGlobal } from './utils/pathUtils';
+import { getWorkspaceStoragePathFromGlobal, allWorkspaceStoragePaths } from './utils/pathUtils';
+import { resolveSessionFilePath } from './providers/copilot/chatSessionsParser';
 import { ReportScope } from './types';
 import { calculateTurnCost, refreshPricingCache } from './pricing/PricingService';
 
@@ -39,7 +40,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const workspaceStoragePath = getWorkspaceStoragePathFromGlobal(storageFsPath);
-  output.appendLine(`[activate] workspaceStoragePath=${workspaceStoragePath}`);
+  const workspaceStoragePaths = allWorkspaceStoragePaths(workspaceStoragePath);
+  output.appendLine(`[activate] workspaceStoragePaths=${workspaceStoragePaths.join(', ')}`);
 
   // ── Sidebar (single webview: filter + tree) ─────────────────────────────────
   const sidebar = new SessionsSidebarProvider(context.extensionUri, db, {
@@ -72,9 +74,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     },
     onRevealSessionFile: async (sessionId: string, chatSessionsPath: string) => {
-      const jsonlPath = path.join(chatSessionsPath, `${sessionId}.jsonl`);
+      const sessionFilePath = resolveSessionFilePath(chatSessionsPath, sessionId);
       try {
-        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(jsonlPath));
+        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(sessionFilePath));
       } catch (err) {
         vscode.window.showErrorMessage(
           `Promptcountant: could not reveal session file — ${(err as Error).message}`
@@ -138,12 +140,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     vscode.commands.registerCommand('promptcountant.resetDatabase', async () => {
-      const choice = await vscode.window.showWarningMessage(
-        'Clear the turn cache and re-parse every Copilot session log? Slower than "Recompute Costs" — use this only if you suspect the on-disk database is corrupt.',
-        { modal: true },
-        'Clear & Re-scan'
-      );
-      if (choice !== 'Clear & Re-scan') return;
       try {
         workerBridge?.stop();
         db?.resetForReprocess();
@@ -168,7 +164,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const workerStartedAt = Date.now();
   workerBridge = new WorkerBridge(
     dbPath,
-    workspaceStoragePath,
+    workspaceStoragePaths,
     /* onSessionAdded */ () => {
       db?.reload();
       sidebar.refresh();

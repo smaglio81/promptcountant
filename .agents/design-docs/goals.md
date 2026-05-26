@@ -8,9 +8,10 @@ Many AI coding agents store prompt history on disk — what was sent to the LLM 
 
 ```
 %APPDATA%\Code - Insiders\User\workspaceStorage\<workspace-hash>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
+%APPDATA%\Code\User\workspaceStorage\<workspace-hash>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
 ```
 
-The goal is to read those files, aggregate the data, and present it in a useful, searchable UI inside VS Code.
+The goal is to read those files from **all installed VS Code variants** (stable and Insiders), aggregate the data, and present it in a useful, searchable UI inside VS Code.
 
 ---
 
